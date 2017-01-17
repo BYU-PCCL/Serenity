@@ -1,7 +1,9 @@
 
 import numpy as np
 from glumpy import app, gl, gloo, glm, data
-from glumpy.transforms import Position, DWTrackball, PanZoom
+from glumpy.transforms import Position, PanZoom
+
+from dwtrackball import DWTrackball
 
 import matplotlib.cm as cm
 
