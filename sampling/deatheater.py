@@ -215,6 +215,8 @@ def main():
 
 	'''
 	Q function current set to rand
+
+	
 	'''
 	Q = rand
 
