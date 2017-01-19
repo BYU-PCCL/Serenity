@@ -1,6 +1,7 @@
 import numpy
 import random
 
+
 class Q:
 
     def __init__(self, min_val=0, max_val=100):
