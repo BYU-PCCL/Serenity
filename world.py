@@ -4,7 +4,6 @@ import random as rand
 from scipy.misc import imread
 import isovist
 
-
 SAFETY_MARGIN = 3
 
 def sigmoid(x):

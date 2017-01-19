@@ -12,7 +12,6 @@ import tensorflow as tf
 
 import world
 import copter
-
 import intruder
 
 #HEADLESS
