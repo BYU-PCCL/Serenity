@@ -17,41 +17,9 @@ class DeathEater:
 		self.screen = screen
 		self.clock = clock
 
-
-	# Sample Map
-	#
-	# Returns an array pygame rectangles
-	def SampleMap_old(self, max_obst_num = 15, min_obst_dim=10, max_obst_dim=70):
-
-		# Currently storing rectangles
-		polygons = []
-
-		terrain = np.zeros([self.xdim, self.ydim])
-		
-		num_obstacles = rand.randint(1, max_obst_num)
-		for i in range(num_obstacles):
-			# Find random starting points
-			start_x = rand.randint(0, self.xdim-min_obst_dim)
-			start_y = rand.randint(0, self.ydim-min_obst_dim)
-
-			# Find random ending points (Within the min and max dimenstions)
-			end_x = start_x + rand.randint(min_obst_dim, max_obst_dim)
-			if end_x > self.xdim-1:
-				end_x = self.xdim-1
-
-			end_y = start_y + rand.randint(min_obst_dim, max_obst_dim)
-			if end_y > self.ydim-1:
-				end_y = self.ydim
-
-			obstacle = pygame.Rect((start_x, start_y),(end_x, end_y))
-
-			polygons.append(obstacle)
-			#print start_x, start_y, " & ",  start_x, end_y, " & ", end_x, end_y, " & ", end_x, start_y
-			#polygons.append(( (start_x, start_y),(start_x, end_y),(end_x, end_y),(end_x, start_y) ))
-		
-		self.ShowRectangles(polygons)
-		return polygons
-
+	'''
+	Returns a list of newly rotated points for a polygon
+	'''
 	def RotateRect(self, points, rotation):
 		rotPoints = []
 		for p in points:
@@ -65,10 +33,13 @@ class DeathEater:
 		#print "Rotated Points: ", rotPoints
 		return rotPoints
 
+	'''
+	Sample Map
 
-	# Sample Map
-	#
-	# Returns an array pygame rectangles
+	Returns an array of array of points
+	each array in the array has the points for a polygon
+
+	'''
 	def SampleMap(self, min_obst_num = 200, max_obst_num = 1000, min_obst_dim=10, max_obst_dim=70):
 
 		# Currently storing rectangles
@@ -100,10 +71,13 @@ class DeathEater:
 			rotated_points = self.RotateRect(points, math.radians(rotation))
 			polygons.append(rotated_points)
 
-		self.ShowRectangles(polygons)
+		self.ShowPolygons(polygons)
 		return polygons
 
-	def ShowRectangles(self, polygons):
+	'''
+	Draws the polygons onto the screen
+	'''
+	def ShowPolygons(self, polygons):
 		if not self.screen == None:
 			black = 20, 20, 40
 			self.screen.fill(black)
@@ -112,6 +86,15 @@ class DeathEater:
 				pygame.draw.polygon(self.screen, (255,255,255), p)
 			pygame.display.update()
 
+'''
+Init Screen
+
+Creates a pygame display
+
+Returns a screen and a clock
+
+'''
+
 def InitScreen(xdim, ydim):
 	pygame.init()
 	pygame.font.init()
@@ -119,19 +102,24 @@ def InitScreen(xdim, ydim):
 	size = (xdim, ydim)
 	screen = pygame.display.set_mode(size)
 
-	pygame.display.set_caption("Rectangles")
+	pygame.display.set_caption("Map Sampling")
 	clock = pygame.time.Clock()
 
 	return screen, clock
 
 
-def Collides(pos,polygons):
+'''
+	Collides returns true if pos ( a point )
+	is within one of the polygons in the list of polygons
+
+    This code is patterned after [Franklin, 2000]
+    http://www.geometryalgorithms.com/Archive/algorithm_0103/algorithm_0103.htm
+    Tells us if the point is in this polygon
+
+'''
+def Collides(pos, polygons):
     for points in polygons:
-        """
-        This code is patterned after [Franklin, 2000]
-        http://www.geometryalgorithms.com/Archive/algorithm_0103/algorithm_0103.htm
-        Tells us if the point is in this polygon
-        """
+        
         cn = 0  # the crossing number counter
         pts = points[:]
         pts.append(points[0])
@@ -143,6 +131,16 @@ def Collides(pos,polygons):
             return True
     return False
 
+'''
+	returns a random point that does
+	not collide with any obstacles
+
+	usually used to find a random 
+	starting point and random end point
+	for RRT
+
+'''
+
 def GetGoodPoint(xdim, ydim, obs):
     while True:
         p = int(rand.random()*xdim), int(rand.random()*ydim)
@@ -150,24 +148,45 @@ def GetGoodPoint(xdim, ydim, obs):
         if noCollision == False:
             return p
 
+'''
+	Returns a random start and end point
+	(for RRT's later use)
+'''
 def CreateRandPath(xdim, ydim, obstacles):
 	start = GetGoodPoint(xdim, ydim, obstacles)
 	end = GetGoodPoint(xdim, ydim, obstacles)
 
-
-	print "start: ", start, " end: ", end
+	#print "start: ", start, " end: ", end
 	return start, end
+
+'''
+	Runs RRT with a random start and end point.
+	This function simply prints the path found by RRT
+'''
 
 def RunARandSimulation(r, xdim, ydim, obstacles):
 	start, end = CreateRandPath(xdim, ydim, obstacles)
 	path = r.run(start, end, obstacles)
 	print "PATH:", path
 
+
+'''
+	By default, this will randomly generate 10 sampled maps
+	and show them one after the other on the pygame screen
+
+	Meant to give an idea of how the sample maps look like
+	in general
+'''
 def RunSampleMapSimulation(d, clock, runSampleMapAmount=10):
 	for i in xrange(runSampleMapAmount):
 		obstacles = d.SampleMap(min_obst_dim=10, max_obst_dim=85)
 		Update()
 		clock.tick(4)
+
+'''
+	Updates the pygame screen
+	and allows for exiting of the pygame screen
+'''
 
 def Update():
 	pygame.display.update()
@@ -175,10 +194,28 @@ def Update():
 		if e.type == QUIT or (e.type == KEYUP and e.key == K_ESCAPE):
 			sys.exit("Exiting")
 
+
+'''
+	main function
+
+	paint = True : when you want a pygame visualization to appear ( is slower when simulating RRT)
+	runRRT = True : when you want RRT to run. Otherwise, it won't find random points and find a path
+	runMap = True : when you don't really want to run RRT, just want to run a map sampling. Meant to Map Sampling testing
+
+'''
 def main():
+
+
 	paint = True
-	runRRT = True
-	runMap = False
+	runRRT = False
+	runMap = True
+
+	'''
+	xdim and ydim of the pygame screen 
+
+	We start off with screen and clock = None in class 
+	we don't want to paint to a screen
+	'''
 	xdim = 1000
 	ydim = 1000
 	array = np.zeros([xdim, ydim])
@@ -190,11 +227,23 @@ def main():
 
 	d = DeathEater(array, screen=screen, clock=clock)
 
+	'''
+	We immediately create some obstacles. 
+	'''
+
 	obstacles = d.SampleMap( min_obst_dim=10, max_obst_dim=85)
 
+	'''
+	If we want to run several samplings of maps and see them
+	'''
 	if runMap:
 		RunSampleMapSimulation(d, clock, runSampleMapAmount=10)
 
+	'''
+	If we want to see several runs of RRT
+	Uses same obstacles
+	Uses different start and end points for the search
+	'''
 	if runRRT:
 		r = RRT.RRT(d.screen, d.clock, len(array), len(array[0]), paint=paint)
 
@@ -202,7 +251,9 @@ def main():
 		for i in xrange(runSimulationAmount):
 			RunARandSimulation(r, xdim, ydim, obstacles)
 	
-
+	'''
+	allows exiting of the pygame screen
+	'''
 	if paint:
 		while True:
 			Update()
