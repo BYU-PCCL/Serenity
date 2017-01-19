@@ -40,35 +40,43 @@ class DeathEater:
 	each array in the array has the points for a polygon
 
 	'''
-	def SampleMap(self, min_obst_num = 200, max_obst_num = 1000, min_obst_dim=10, max_obst_dim=70):
+	def SampleMap(self, Q):
 
-		# Currently storing rectangles
+		''' number of obstacles (min and max) '''
+		min_obst_num = 200
+		max_obst_num = 1000
+
+		''' obstacles dimenstions (min and max) '''
+		min_obst_dim= 10
+		max_obst_dim= 85
+
+		''' Currently storing polygons (currently rectangles) '''
 		polygons = []
-
-		terrain = np.zeros([self.xdim, self.ydim])
 		
-		num_obstacles = rand.randint(min_obst_num, max_obst_num)
+		num_obstacles = Q.randint(min_obst_num, max_obst_num)
+
 		print num_obstacles
 		for i in range(num_obstacles):
-			# Find random starting points
-			start_x = rand.randint(0, self.xdim-min_obst_dim)
-			start_y = rand.randint(0, self.ydim-min_obst_dim)
+			''' Find random starting points'''
+			start_x = Q.randint(0, self.xdim-min_obst_dim)
+			start_y = Q.randint(0, self.ydim-min_obst_dim)
 
-			# Find random ending points (Within the min and max dimenstions)
-			end_x = start_x + rand.randint(min_obst_dim, max_obst_dim)
+			'''Find random ending points (Within the min and max dimenstions)'''
+			end_x = start_x + Q.randint(min_obst_dim, max_obst_dim)
 			if end_x > self.xdim-1:
 				end_x = self.xdim-1
 
-			end_y = start_y + rand.randint(min_obst_dim, max_obst_dim)
+			end_y = start_y + Q.randint(min_obst_dim, max_obst_dim)
 			if end_y > self.ydim-1:
 				end_y = self.ydim
 
-			#print start_x, start_y, " & ",  start_x, end_y, " & ", end_x, end_y, " & ", end_x, start_y
-			#polygons.append(( (start_x, start_y),(start_x, end_y),(end_x, end_y),(end_x, start_y) ))
-			
 			points = [(start_x, start_y),(start_x, end_y),(end_x, end_y),(end_x, start_y)]
-			rotation = rand.randint(-180, 180)
+
+			''' Rotate points '''
+			rotation = Q.randint(-180, 180)
 			rotated_points = self.RotateRect(points, math.radians(rotation))
+
+			'''Add points into polygon list '''
 			polygons.append(rotated_points)
 
 		self.ShowPolygons(polygons)
@@ -177,9 +185,9 @@ def RunARandSimulation(r, xdim, ydim, obstacles):
 	Meant to give an idea of how the sample maps look like
 	in general
 '''
-def RunSampleMapSimulation(d, clock, runSampleMapAmount=10):
+def RunSampleMapSimulation(d, clock, Q, runSampleMapAmount=10):
 	for i in xrange(runSampleMapAmount):
-		obstacles = d.SampleMap(min_obst_dim=10, max_obst_dim=85)
+		obstacles = d.SampleMap(Q)
 		Update()
 		clock.tick(4)
 
@@ -205,6 +213,10 @@ def Update():
 '''
 def main():
 
+	'''
+	Q function current set to rand
+	'''
+	Q = rand
 
 	paint = True
 	runRRT = False
@@ -231,13 +243,13 @@ def main():
 	We immediately create some obstacles. 
 	'''
 
-	obstacles = d.SampleMap( min_obst_dim=10, max_obst_dim=85)
+	obstacles = d.SampleMap(Q)
 
 	'''
 	If we want to run several samplings of maps and see them
 	'''
 	if runMap:
-		RunSampleMapSimulation(d, clock, runSampleMapAmount=10)
+		RunSampleMapSimulation(d, clock, Q, runSampleMapAmount=10)
 
 	'''
 	If we want to see several runs of RRT
