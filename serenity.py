@@ -59,7 +59,7 @@ SHOW_COMPLEX_KERNAL = False	#shows kernal at intruder's curreny xy coords
 PAUSE_BETWEEN_TIME_STEPS = 0 	#-1 prompts for input between steps
 SHOW_ISOVIST = False
 USE_VECTOR_MATRIX_MULTIPLY = False
-DOWNSAMPLE = 1 			#downsample factor for vector matrix multiply
+DOWNSAMPLE = 8 			#downsample factor for prior updates
 
 COLOR_SCALE = XDIM*YDIM*2.5
 KERNAL_COLOR_SCALE = 1200
@@ -251,7 +251,7 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
 			
 	kx_min, kx_max, ky_min, ky_max = 0, KERNAL_SIZE, 0, KERNAL_SIZE
 
-        for i in range(0,xlim):
+        for i in range(0+rand.randint(0, DOWNSAMPLE-1),xlim,DOWNSAMPLE):
 	    xmin = max(0,i-midpoint)
 	    xmax = min(i+1+midpoint, xlim)
 	    kx_min = 0
@@ -261,7 +261,7 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
 	    if i+midpoint >= xlim:
 		kx_max = xlim - i + midpoint
 
-	    for j in range(0,ylim):
+	    for j in range(0+rand.randint(0,DOWNSAMPLE-1),ylim,DOWNSAMPLE):
 		if w.is_valid(i+x_offset,j+y_offset):
 	            ymin = max(0,j-midpoint)
 		    ymax = min(j+1+midpoint, ylim)
