@@ -28,7 +28,7 @@ class Intruder:
     	self.momentum_x = 0
 	self.momentum_y = 0
 	self.MESSY_WORLD = MESSY_WORLD
-	self.count = 0
+	self.invalid_step_count = 0
 	self.waypoint = self.select_waypoint()
 
     def random_location(self):
@@ -79,7 +79,7 @@ class Intruder:
 	if not self.my_world.is_valid(waypoint[0], waypoint[1]):
 	    self.select_waypoint()
 
-	self.count = 0
+	self.invalid_step_count = 0
 	return waypoint
 
     def waypoint_step(self):
@@ -113,8 +113,8 @@ class Intruder:
 	    self.x = new_x
 	    self.y = new_y
 	else:
-	    self.count += 1
-	    if self.count > 5:
+	    self.invalid_step_count += 1
+	    if self.invalid_step_count > 5:
 	        self.waypoint = self.select_waypoint()
 
 

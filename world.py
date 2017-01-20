@@ -1,10 +1,12 @@
 import math
+
 import numpy as np
 import random as rand
 from scipy.misc import imread
+
 import isovist
 
-SAFETY_MARGIN = 3
+SAFETY_MARGIN = 1
 
 def sigmoid(x):
     return 1.0 / (1.0 + np.exp( -x ) )
@@ -52,11 +54,12 @@ class World:
 	#self.movement_bounds = [150,xdim-151,150,ydim-151]
 	self.movement_bounds = [int(0.3*xdim),int(0.82*xdim),int(0.28*ydim),int(0.8*ydim)]
 	self.initialize_terrain(num_obstacles, min_obst_dim, max_obst_dim)
-	#self.load_point_cloud('point_clouds/final_xyz.npy')
-	#self.read_point_cloud_image('point_clouds/bremen_altstadt_final.png')
-	self.create_valid_squares()
-	self.initialize_treats(num_treats)
-	self.isovist = isovist.Isovist(self.terrain)
+        self.validity_map = self.construct_validity_map()
+        #self.load_point_cloud('point_clouds/final_xyz.npy')
+        #self.read_point_cloud_image('point_clouds/bremen_altstadt_final.png')
+        self.create_valid_squares()
+        self.initialize_treats(num_treats)
+        self.isovist = isovist.Isovist(self.terrain)
 
     def create_valid_squares(self):
 	self.valid_squares = np.zeros([self.xdim,self.ydim])
@@ -179,12 +182,26 @@ class World:
     def within_movement_bounds(self, x, y):
 	return (x>self.movement_bounds[0]) and (x<self.movement_bounds[1]) and (y>self.movement_bounds[2]) and (y<self.movement_bounds[3])
 
+    def construct_validity_map(self):
+        print('self.terrain.shape', self.terrain.shape)
+        validity_map = np.zeros(self.terrain.shape)
+        for x in range(validity_map.shape[1]):
+                for y in range(validity_map.shape[0]):
+                        validity_map[y, x] = self.is_valid(x, y)
+        return validity_map
+
     def is_valid(self, x, y):
         #a square is valid IFF if it is not too near the
 	#edge or pixels in the terrain/point cloud
 	
 	#original version; we're trying to be faster
-	return self.within_movement_bounds(x,y) and not np.any(self.terrain[x-SAFETY_MARGIN:x+SAFETY_MARGIN,y-SAFETY_MARGIN:y+SAFETY_MARGIN])
+        try:
+                return self.validity_map[x, y]
+        except AttributeError:
+        # print('np.mean(self.terrain)', np.mean(self.terrain))
+                space_to_check = self.terrain[x-SAFETY_MARGIN:x+SAFETY_MARGIN,y-SAFETY_MARGIN:y+SAFETY_MARGIN]
+                return self.within_movement_bounds(x,y) and not np.any(space_to_check)
+        
 	
 	#(no distinct speedup found using the function below, so it was dropped)
 	#return self.within_movement_bounds(x,y) and (self.terrain[x][y] == 1)
