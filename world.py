@@ -184,7 +184,7 @@ class World:
 	#edge or pixels in the terrain/point cloud
 	
 	#original version; we're trying to be faster
-	return self.within_movement_bounds(x,y) and (np.sum(self.terrain[x-SAFETY_MARGIN:x+SAFETY_MARGIN,y-SAFETY_MARGIN:y+SAFETY_MARGIN]) == 0)
+	return self.within_movement_bounds(x,y) and not np.any(self.terrain[x-SAFETY_MARGIN:x+SAFETY_MARGIN,y-SAFETY_MARGIN:y+SAFETY_MARGIN])
 	
 	#(no distinct speedup found using the function below, so it was dropped)
 	#return self.within_movement_bounds(x,y) and (self.terrain[x][y] == 1)
