@@ -32,7 +32,6 @@ def shift_and_scale(array, xdim, ydim):
     y *= ydim/np.max(y)
     z *= ydim/np.max(z)         #scale between 1-ydim for now
 
-
 def horizontal_slice(array, min_height=200, max_height=1000):
     #returns a horizontal slice including all points in the
     #desired altitude range
@@ -57,6 +56,8 @@ class World:
         self.create_valid_squares()
         self.initialize_treats(num_treats)
         self.isovist = isovist.Isovist(self.terrain)
+
+        self.validity_map = self.create_validity_map()
 
     def create_valid_squares(self):
         self.valid_squares = np.zeros([self.xdim,self.ydim])
@@ -174,17 +175,27 @@ class World:
         #use the green color channel for sniper locations
         self.sniper_locations = img[:,:,1].T
         
-
-
     def within_movement_bounds(self, x, y):
         return (x>self.movement_bounds[0]) and (x<self.movement_bounds[1]) and (y>self.movement_bounds[2]) and (y<self.movement_bounds[3])
+
+    def create_validity_map(self):
+        validity_map = np.zeros(self.terrain.shape)
+
+        for y in range(self.terrain.shape[0]):
+            for x in range(self.terrain.shape[1]):
+                validity_map[y, x] = self.is_valid(x, y)
+
+        return validity_map
 
     def is_valid(self, x, y):
         #a square is valid IFF if it is not too near the
         #edge or pixels in the terrain/point cloud
         
         #original version; we're trying to be faster
-        return self.within_movement_bounds(x,y) and not np.any(self.terrain[x-SAFETY_MARGIN:x+SAFETY_MARGIN,y-SAFETY_MARGIN:y+SAFETY_MARGIN])
+        try:
+            return self.validity_map[y, x]
+        except AttributeError:
+            return self.within_movement_bounds(x,y) and not np.any(self.terrain[x-SAFETY_MARGIN:x+SAFETY_MARGIN,y-SAFETY_MARGIN:y+SAFETY_MARGIN])
         
         #(no distinct speedup found using the function below, so it was dropped)
         #return self.within_movement_bounds(x,y) and (self.terrain[x][y] == 1)
