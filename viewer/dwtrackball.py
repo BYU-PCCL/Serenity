@@ -81,6 +81,16 @@ class DWTrackball(Transform):
             self.view_xyz[0] -= 0.25*s*fwd # LR
             self.view_xyz[2] += 0.25*c*fwd # LR
 
+#        print "----"
+#        print self.view_xyz
+#        print self.view_hpr
+
+        self.do_update()
+
+    def on_mouse_scroll(self, x, y, dx, dy):
+        self.on_mouse_drag( 0, 0, 0, -5*dy, 8 )
+
+    def do_update( self ):
         M = np.eye( 4 )
         M = glm.rotate( M, -90, 1, 0, 0 ) # rotates CCW
         glm.translate( M, -self.view_xyz[0], -self.view_xyz[1], -self.view_xyz[2] )
@@ -89,6 +99,3 @@ class DWTrackball(Transform):
 
         self._model = M
         self["model"] = self._model
-
-    def on_mouse_scroll(self, x, y, dx, dy):
-        self.on_mouse_drag( 0, 0, 0, -5*dy, 8 )
