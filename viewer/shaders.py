@@ -111,3 +111,42 @@ void main() {
 } """
 
 # ==========================================================================
+
+line_vertex = """
+uniform int index, size, count;
+attribute float x_index, y_index, y_value;
+varying float do_discard;
+void main (void) {
+    float x = 2*(mod(x_index - index, size) / (size)) - 1.0;
+    if ((x >= +1.0) || (x <= -1.0)) do_discard = 1;
+    else                            do_discard = 0;
+    float y = (2*((y_index+.5)/(count))-1) + y_value;
+    gl_Position = vec4(x, y, 0, 1);
+}
+"""
+
+line_fragment = """
+varying float do_discard;
+void main(void) {
+    if (do_discard > 0) discard;
+    gl_FragColor = vec4(0,0,0,1);
+}
+"""
+
+# ==========================================================================
+
+paths_vertex = """
+attribute vec4 color;         // Vertex color
+attribute vec3 position;      // Vertex position
+varying vec4   v_color;       // Interpolated fragment color (out)
+
+void main() {
+  v_color = color;
+  gl_Position = vec4( position.x*2.0-1.0, position.y*2.0-1.0, position.z, 1.0 );
+} """
+
+paths_fragment = """
+varying vec4   v_color;         // Interpolated fragment color (in)
+void main() {
+  gl_FragColor = v_color;
+} """
