@@ -171,10 +171,15 @@ def policy_rollout(intruder_list):
         intruder.simple_kernel = simple_kernel/(np.sum(simple_kernel)+1e-100)
 
 	#normalize each x,y kernel in the complex kernel
-        for i in range(0, XDIM):
-            for j in range(0,YDIM):
-		if np.sum(kernel[i][j]) != 0:
-                    kernel[i][j] = kernel[i][j]/np.sum(kernel[i][j])
+  #       for i in range(0, XDIM):
+  #           for j in range(0,YDIM):
+		# if np.sum(kernel[i][j]) != 0:
+  #                   kernel[i][j] = kernel[i][j]/np.sum(kernel[i][j])
+
+        kernel_sums = np.sum(kernel, axis=(2, 3)) # (1000, 1000)
+        not_zero_positions = np.where(kernel_sums != 0)
+        kernel[not_zero_positions] /= np.expand_dims(np.expand_dims(kernel_sums[not_zero_positions], axis=2), axis=2)
+
         intruder.kernel = kernel
 
 	#normalize the overall probability map
