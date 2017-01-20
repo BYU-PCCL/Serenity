@@ -34,8 +34,8 @@ LITE_GRY = ( 100, 100, 100)
 
 #GLOBAL CONSTANTS 
 MAX_MOMENTUM =10 
-INTRUDER_MOMENTUM = 4 #sum of momentum plus intruder's jitter must be less than KERNAL_SIZE/2
-KERNAL_SIZE = 11 #must be an odd number 
+INTRUDER_MOMENTUM = 4 #sum of momentum plus intruder's jitter must be less than KERNEL_SIZE/2
+KERNEL_SIZE = 11 #must be an odd number 
 ICON_SIZE = 10
 
 #XDIM = 500
@@ -45,7 +45,7 @@ ICON_SIZE = 10
 XDIM=1000
 YDIM=1000
 
-MODE = 1 		#0 = simple kernal, 1 = complex kernal
+MODE = 1 		#0 = simple kernel, 1 = complex kernel
 TREATS = 3 		#number of cookies/truffles/etc
 OBSTACLES = 10		#number of obstacles on the world map
 INTRUDER_TYPE = 1	#0 = momentum, 1 = waypoints
@@ -54,15 +54,15 @@ MESSY_WORLD = True
 ROLLOUT_EPOCHS = int(1e3)
 ROLLOUT_TIME_STEPS = int(1e3)
 SHOW_INITIAL_PROBABILITY_MAP = False
-SHOW_SIMPLE_KERNAL = False
-SHOW_COMPLEX_KERNAL = False	#shows kernal at intruder's curreny xy coords
+SHOW_SIMPLE_KERNEL = False
+SHOW_COMPLEX_KERNEL = False	#shows kernel at intruder's curreny xy coords
 PAUSE_BETWEEN_TIME_STEPS = 0 	#-1 prompts for input between steps
 SHOW_ISOVIST = False
 USE_VECTOR_MATRIX_MULTIPLY = False
 DOWNSAMPLE = 8 			#downsample factor for prior updates
 
 COLOR_SCALE = XDIM*YDIM*2.5
-KERNAL_COLOR_SCALE = 1200
+KERNEL_COLOR_SCALE = 1200
 
 #P_HEARD_SOMETHING_IF_NO_INTRUDER = 1e-5
 #P_HEARD_SOMETHING_IF_INTRUDER = 0.999
@@ -74,22 +74,22 @@ P_SAW_SOMETHING_IF_INTRUDER = 1.0		#probability of seeing intr.
 
 #SOME TENSORFLOW CALCULATIONS TO LET US ENGAGE THE GPU
 
-#calculations for predict_intruder_location(), simple kernal
+#calculations for predict_intruder_location(), simple kernel
 tf_priors = tf.placeholder(tf.float32, [1, None, None, 1], name='priors')
-tf_simple_kernal = tf.placeholder(tf.float32,[KERNAL_SIZE,KERNAL_SIZE,1,1], name='simple_kernal')
+tf_simple_kernel = tf.placeholder(tf.float32,[KERNEL_SIZE,KERNEL_SIZE,1,1], name='simple_kernel')
 
-tf_simple_kernal_convolution = tf.nn.conv2d(tf_priors, tf_simple_kernal, [1,1,1,1], "SAME")
+tf_simple_kernel_convolution = tf.nn.conv2d(tf_priors, tf_simple_kernel, [1,1,1,1], "SAME")
 
 
-#calculations for predict_intruder_location(), complex kernal
+#calculations for predict_intruder_location(), complex kernel
 #(In trials, this ran much more slowly than the numpy version
 #so it was cut.)
 tf_complex_priors_segment = tf.placeholder(tf.float32, [None, None], name='priors')
-#tf_complex_kernal = tf.placeholder(tf.float32,[None,None,KERNAL_SIZE,KERNAL_SIZE], name='complex_kernal')
-tf_kernal_slice = tf.placeholder(tf.float32,[None,None], name='kernal')
+#tf_complex_kernel = tf.placeholder(tf.float32,[None,None,KERNEL_SIZE,KERNEL_SIZE], name='complex_kernel')
+tf_kernel_slice = tf.placeholder(tf.float32,[None,None], name='kernel')
 tf_prob = tf.placeholder(tf.float32, shape=(), name='relative_coordinates') #adjusted i,j values
 
-tf_new_priors = tf_complex_priors_segment + tf_prob*tf_kernal_slice       
+tf_new_priors = tf_complex_priors_segment + tf_prob*tf_kernel_slice       
 
 sess = tf.Session()
 
@@ -116,13 +116,13 @@ def policy_rollout(intruder_list):
 
     for intruder in intruder_list:
  
-        #establish a base kernal that will model the intruder behavior
-        simple_kernal = np.zeros([KERNAL_SIZE,KERNAL_SIZE], dtype=np.float32) 
+        #establish a base kernel that will model the intruder behavior
+        simple_kernel = np.zeros([KERNEL_SIZE,KERNEL_SIZE], dtype=np.float32) 
 	
-	#also create a complex kernal construct: a separate
-	#movement kernal for each x,y location                
-        kernal = np.zeros([intruder.xdim, intruder.ydim, KERNAL_SIZE,KERNAL_SIZE], dtype=np.float32)
-        midpoint = KERNAL_SIZE/2
+	#also create a complex kernel construct: a separate
+	#movement kernel for each x,y location                
+        kernel = np.zeros([intruder.xdim, intruder.ydim, KERNEL_SIZE,KERNEL_SIZE], dtype=np.float32)
+        midpoint = KERNEL_SIZE/2
 
 	#TRANSITION MATRIX
 	#represents the probability of transferring from any given
@@ -150,14 +150,14 @@ def policy_rollout(intruder_list):
                 prev_y = intruder.y
                 intruder.step()
 
-		#determine the kernal location that corresponds
+		#determine the kernel location that corresponds
 		#to the intruder's new position
                 delta_x = intruder.x-prev_x
                 delta_y = intruder.y-prev_y
 
-		#update simple and complex kernals
-                simple_kernal[midpoint+delta_x][midpoint+delta_y] += 1
-                kernal[prev_x][prev_y][midpoint + delta_x][midpoint+delta_y] += 1
+		#update simple and complex kernels
+                simple_kernel[midpoint+delta_x][midpoint+delta_y] += 1
+                kernel[prev_x][prev_y][midpoint + delta_x][midpoint+delta_y] += 1
 		#update overall probability map
                 geographic_probability_map[intruder.x][intruder.y] += 1
 
@@ -167,15 +167,15 @@ def policy_rollout(intruder_list):
 		    transition_matrix[((prev_x-x_offset)*ydim+(prev_y-y_offset))/DOWNSAMPLE][((intruder.x-x_offset)*ydim+(intruder.y-y_offset))/DOWNSAMPLE] += 1
 		
 
-	#normalize the simple kernal
-        intruder.simple_kernal = simple_kernal/(np.sum(simple_kernal)+1e-100)
+	#normalize the simple kernel
+        intruder.simple_kernel = simple_kernel/(np.sum(simple_kernel)+1e-100)
 
-	#normalize each x,y kernal in the complex kernal
+	#normalize each x,y kernel in the complex kernel
         for i in range(0, XDIM):
             for j in range(0,YDIM):
-		if np.sum(kernal[i][j]) != 0:
-                    kernal[i][j] = kernal[i][j]/np.sum(kernal[i][j])
-        intruder.kernal = kernal
+		if np.sum(kernel[i][j]) != 0:
+                    kernel[i][j] = kernel[i][j]/np.sum(kernel[i][j])
+        intruder.kernel = kernel
 
 	#normalize the overall probability map
         intruder.geographic_probability_map = geographic_probability_map/np.sum(geographic_probability_map)
@@ -195,13 +195,13 @@ def predict_intruder_location_optimized(priors, intruder, mode, w, x_offset=0, y
     new_priors = np.copy(priors)
     xlim, ylim = new_priors.shape[0], new_priors.shape[1]
 
-    if mode == 0: #simple kernal - a single kernal summarizes intruder behavior
+    if mode == 0: #simple kernel - a single kernel summarizes intruder behavior
 	
-	new_priors = sess.run(tf_simple_kernal_convolution, feed_dict={tf_priors:np.reshape(new_priors,[1,xlim,ylim,1]),tf_simple_kernal:np.reshape(intruder.simple_movement_kernal(),[KERNAL_SIZE,KERNAL_SIZE,1,1])})
+	new_priors = sess.run(tf_simple_kernel_convolution, feed_dict={tf_priors:np.reshape(new_priors,[1,xlim,ylim,1]),tf_simple_kernel:np.reshape(intruder.simple_movement_kernel(),[KERNEL_SIZE,KERNEL_SIZE,1,1])})
 	
 	return np.reshape(new_priors, [xlim,ylim])
 
-    else: #complex kernal - a separate movement kernal for each xy location
+    else: #complex kernel - a separate movement kernel for each xy location
 
 	print [xlim, ylim]
 
@@ -238,24 +238,24 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
     new_priors = np.copy(priors)
     xlim, ylim = new_priors.shape[0], new_priors.shape[1]
 
-    if mode == 0: #simple kernal - a single kernal summarizes intruder behavior
+    if mode == 0: #simple kernel - a single kernel summarizes intruder behavior
 	
-	new_priors = sess.run(tf_simple_kernal_convolution, feed_dict={tf_priors:np.reshape(new_priors,[1,xlim,ylim,1]),tf_simple_kernal:np.reshape(intruder.simple_movement_kernal(),[KERNAL_SIZE,KERNAL_SIZE,1,1])})
+	new_priors = sess.run(tf_simple_kernel_convolution, feed_dict={tf_priors:np.reshape(new_priors,[1,xlim,ylim,1]),tf_simple_kernel:np.reshape(intruder.simple_movement_kernel(),[KERNEL_SIZE,KERNEL_SIZE,1,1])})
 	
 	return np.reshape(new_priors, [xlim,ylim])
 
-    else: #complex kernal - a separate movement kernal for each xy location
+    else: #complex kernel - a separate movement kernel for each xy location
 
-	complex_kernal = intruder.complex_movement_kernal()
-	midpoint = KERNAL_SIZE/2	#all xy kernals have the same shape,
+	complex_kernel = intruder.complex_movement_kernel()
+	midpoint = KERNEL_SIZE/2	#all xy kernels have the same shape,
 			
-	kx_min, kx_max, ky_min, ky_max = 0, KERNAL_SIZE, 0, KERNAL_SIZE
+	kx_min, kx_max, ky_min, ky_max = 0, KERNEL_SIZE, 0, KERNEL_SIZE
 
         for i in range(0+rand.randint(0, DOWNSAMPLE-1),xlim,DOWNSAMPLE):
 	    xmin = max(0,i-midpoint)
 	    xmax = min(i+1+midpoint, xlim)
 	    kx_min = 0
-	    kx_max = KERNAL_SIZE
+	    kx_max = KERNEL_SIZE
 	    if i-midpoint <= 0:
 	        kx_min = midpoint - i
 	    if i+midpoint >= xlim:
@@ -266,22 +266,22 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
 	            ymin = max(0,j-midpoint)
 		    ymax = min(j+1+midpoint, ylim)
 		    ky_min = 0
-		    ky_max = KERNAL_SIZE
+		    ky_max = KERNEL_SIZE
 	            if j-midpoint <= 0:
 		        ky_min = midpoint - j
 	            if j+midpoint >= ylim:
 		        ky_max = ylim - j + midpoint
 
-		    #get the movement kernal associated with
+		    #get the movement kernel associated with
 		    #this x,y position
-		    kernal = complex_kernal[i+x_offset][j+y_offset]
+		    kernel = complex_kernel[i+x_offset][j+y_offset]
 
-		    #update the priors based on the (possibly sliced) kernal
-		    kernal_slice = kernal[kx_min:kx_max,ky_min:ky_max]
-	            new_priors[xmin:xmax,ymin:ymax] = new_priors[xmin:xmax,ymin:ymax] + priors[i][j]*kernal_slice       
+		    #update the priors based on the (possibly sliced) kernel
+		    kernel_slice = kernel[kx_min:kx_max,ky_min:ky_max]
+	            new_priors[xmin:xmax,ymin:ymax] = new_priors[xmin:xmax,ymin:ymax] + priors[i][j]*kernel_slice       
 
 		    #tensorflow implementation: didn't work, ran slower
-		    #new_priors[xmin:xmax,ymin:ymax] = sess.run(tf_new_priors, feed_dict={tf_complex_priors_segment:PRIORS[xmin:xmax,ymin:ymax],tf_kernal_slice:kernal_slice,tf_prob:priors[i][j]})
+		    #new_priors[xmin:xmax,ymin:ymax] = sess.run(tf_new_priors, feed_dict={tf_complex_priors_segment:PRIORS[xmin:xmax,ymin:ymax],tf_kernel_slice:kernel_slice,tf_prob:priors[i][j]})
 
         return new_priors/(np.sum(new_priors)+1e-100)
 
@@ -402,19 +402,19 @@ def paint_to_screen(PRIORS, w, c, i):
 	pygame.draw.rect(screen, GREEN, [c.x - ICON_SIZE/2, c.y - ICON_SIZE/2, ICON_SIZE, ICON_SIZE])
 	pygame.draw.rect(screen, RED, [i.x - ICON_SIZE/2, i.y - ICON_SIZE/2, ICON_SIZE, ICON_SIZE])
 
-	#DEBUGGING TOOL: show the active kernal
-	if SHOW_SIMPLE_KERNAL == True:
-	    kernal = i.simple_movement_kernal()
-	    kern = np.copy(kernal)
+	#DEBUGGING TOOL: show the active kernel
+	if SHOW_SIMPLE_KERNEL == True:
+	    kernel = i.simple_movement_kernel()
+	    kern = np.copy(kernel)
 	    kern = np.repeat(np.repeat(kern, 10, axis=0), 10, axis=1)
-	    SAVED_KERNAL = np.stack((kern, kern, kern), axis=-1)
-	    img = pygame.surfarray.make_surface((SAVED_KERNAL*KERNAL_COLOR_SCALE).astype(int))
+	    SAVED_KERNEL = np.stack((kern, kern, kern), axis=-1)
+	    img = pygame.surfarray.make_surface((SAVED_KERNEL*KERNEL_COLOR_SCALE).astype(int))
 	    screen.blit(img, (10,10), img.get_rect())
-	if SHOW_COMPLEX_KERNAL == True:
-	    kern = np.copy(i.movement_kernal(i.x, i.y))
+	if SHOW_COMPLEX_KERNEL == True:
+	    kern = np.copy(i.movement_kernel(i.x, i.y))
 	    kern = np.repeat(np.repeat(kern, 10, axis=0), 10, axis=1)
-	    SAVED_KERNAL = np.stack((kern, kern, kern), axis=-1)
-	    img = pygame.surfarray.make_surface((SAVED_KERNAL*KERNAL_COLOR_SCALE).astype(int))
+	    SAVED_KERNEL = np.stack((kern, kern, kern), axis=-1)
+	    img = pygame.surfarray.make_surface((SAVED_KERNEL*KERNEL_COLOR_SCALE).astype(int))
 	    screen.blit(img, (10,10), img.get_rect())
 
 	#FLIP THE DISPLAY

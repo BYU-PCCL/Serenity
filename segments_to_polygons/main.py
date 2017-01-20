@@ -60,7 +60,10 @@ def segments_to_polygons(segments, position):
   polygons = []
 
   for segment in segments:
-    assumed_area = np.random.normal(loc=250**2, scale=10**2)
+    assumed_area = np.random.normal(
+      loc=250**2, 
+      scale=(10 * BUILDING_VARIANCE)**2
+    )
 
     segment_top, segment_bottom = segment[:2], segment[2:]
 
