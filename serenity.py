@@ -59,7 +59,7 @@ SHOW_COMPLEX_KERNAL = False	#shows kernal at intruder's curreny xy coords
 PAUSE_BETWEEN_TIME_STEPS = 0 	#-1 prompts for input between steps
 SHOW_ISOVIST = False
 USE_VECTOR_MATRIX_MULTIPLY = False
-DOWNSAMPLE = 8 			#downsample factor for prior updates
+DOWNSAMPLE = 4 			#downsample factor for prior updates
 
 COLOR_SCALE = XDIM*YDIM*2.5
 KERNAL_COLOR_SCALE = 1200
@@ -71,6 +71,9 @@ P_HEARD_SOMETHING_IF_INTRUDER = 1.0		#probability of hearing intr.
 P_SAW_SOMETHING_IF_NO_INTRUDER = 0.0	 	#probability of false pos.
 P_SAW_SOMETHING_IF_INTRUDER = 1.0		#probability of seeing intr.
 
+
+cookie_img = pygame.image.load("imgs/cookie.png")
+cookie_img = pygame.transform.scale(cookie_img, (24,24))
 
 #SOME TENSORFLOW CALCULATIONS TO LET US ENGAGE THE GPU
 
@@ -278,7 +281,7 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
 
 		    #update the priors based on the (possibly sliced) kernal
 		    kernal_slice = kernal[kx_min:kx_max,ky_min:ky_max]
-	            new_priors[xmin:xmax,ymin:ymax] = new_priors[xmin:xmax,ymin:ymax] + priors[i][j]*kernal_slice       
+	            new_priors[xmin:xmax,ymin:ymax] = new_priors[xmin:xmax,ymin:ymax] + DOWNSAMPLE * priors[i][j]*kernal_slice       
 
 		    #tensorflow implementation: didn't work, ran slower
 		    #new_priors[xmin:xmax,ymin:ymax] = sess.run(tf_new_priors, feed_dict={tf_complex_priors_segment:PRIORS[xmin:xmax,ymin:ymax],tf_kernal_slice:kernal_slice,tf_prob:priors[i][j]})
@@ -382,9 +385,7 @@ def paint_to_screen(PRIORS, w, c, i):
 
 	#TREATS
 	for k in w.cookies:
-	    img = pygame.image.load("imgs/cookie.png")
-	    img = pygame.transform.scale(img, (24,24))
-	    screen.blit(img, (k[0]-12, k[1]-12))
+	    screen.blit(cookie_img, (k[0]-12, k[1]-12))
 
 	#(I haven't implemented popcorn and truffles yet,
 	#but if I did, here's some code for displaying
