@@ -133,11 +133,11 @@ class Intruder:
 	    self.x = rand.randint(x1,x2)
 	    self.y = rand.randint(x1,x2)
 
-    def simple_movement_kernal(self):
-	return self.simple_kernal
+    def simple_movement_kernel(self):
+	return self.simple_kernel
 
-    def complex_movement_kernal(self):
-	return self.kernal
+    def complex_movement_kernel(self):
+	return self.kernel
     
     def movement_kernal(self,x,y):
 	return self.kernal[x][y]
