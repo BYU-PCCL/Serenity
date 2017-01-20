@@ -19,8 +19,10 @@ def stdize( x ):
 # ========================================================
 
 print "Loading points..."
-xyz = np.load( '/opt/wingated/nancy/final_xyz.npy' )
-colors_1 = np.load( '/opt/wingated/nancy/final_ref.npy' )
+#xyz = np.load( '/opt/wingated/nancy/final_xyz.npy' )
+xyz = np.load( '../point_clouds/final_xyz.npy' )
+#colors_1 = np.load( '/opt/wingated/nancy/final_ref.npy' )
+colors_1 = np.load( '../point_clouds/final_ref.npy' )
 
 # do this
 #xyz = xyz / 20.0
