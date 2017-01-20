@@ -51,9 +51,9 @@ class World:
 	#self.movement_bounds = [0,xdim-1,0,ydim-1]
 	#self.movement_bounds = [150,xdim-151,150,ydim-151]
 	self.movement_bounds = [int(0.3*xdim),int(0.82*xdim),int(0.28*ydim),int(0.8*ydim)]
-	self.initialize_terrain(num_obstacles, min_obst_dim, max_obst_dim)
+	#self.initialize_terrain(num_obstacles, min_obst_dim, max_obst_dim)
 	#self.load_point_cloud('point_clouds/final_xyz.npy')
-	#self.read_point_cloud_image('point_clouds/bremen_altstadt_final.png')
+	self.read_point_cloud_image('point_clouds/bremen_altstadt_final.png')
 	self.create_valid_squares()
 	self.initialize_treats(num_treats)
 	self.isovist = isovist.Isovist(self.terrain)

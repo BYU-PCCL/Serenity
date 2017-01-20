@@ -142,3 +142,9 @@ class Intruder:
     def movement_kernal(self,x,y):
 	return self.kernal[x][y]
 
+
+class Trespasser(Intruder):
+
+    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=4, start_x=-1, start_y=-1):
+        Intruder.__init__(self, my_world, MESSY_WORLD, target, max_speed, start_x, start_y)
+
