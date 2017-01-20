@@ -280,8 +280,8 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
 		    kernel = complex_kernel[i+x_offset][j+y_offset]
 
 		    #update the priors based on the (possibly sliced) kernal
-		    kernal_slice = kernal[kx_min:kx_max,ky_min:ky_max]
-	            new_priors[xmin:xmax,ymin:ymax] = new_priors[xmin:xmax,ymin:ymax] + DOWNSAMPLE * priors[i][j]*kernal_slice       
+		    kernel_slice = kernel[kx_min:kx_max,ky_min:ky_max]
+	            new_priors[xmin:xmax,ymin:ymax] = new_priors[xmin:xmax,ymin:ymax] + DOWNSAMPLE * priors[i][j]*kernel_slice       
 
 		    #tensorflow implementation: didn't work, ran slower
 		    #new_priors[xmin:xmax,ymin:ymax] = sess.run(tf_new_priors, feed_dict={tf_complex_priors_segment:PRIORS[xmin:xmax,ymin:ymax],tf_kernel_slice:kernel_slice,tf_prob:priors[i][j]})
