@@ -21,8 +21,10 @@ def stdize( x ):
 # ========================================================
 
 print "Loading points..."
-xyz = np.load( '/opt/wingated/nancy/final_xyz.npy' )
-colors_1 = np.load( '/opt/wingated/nancy/final_ref.npy' )
+#xyz = np.load( '/opt/wingated/nancy/final_xyz.npy' )
+xyz = np.load( '../point_clouds/final_xyz.npy' )
+#colors_1 = np.load( '/opt/wingated/nancy/final_ref.npy' )
+colors_1 = np.load( '../point_clouds/final_ref.npy' )
 
 # or do all of this
 # normalize and clip out the interesting bits
