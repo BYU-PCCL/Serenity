@@ -36,6 +36,7 @@ class Q( object ):
     def mk_name( self, name ):
         if name == None:
             # someday, might replace this with auto-naming?
+            # check out the inspect module...
             raise( Exception('All ERPs must have a name!') )
         return name
 
