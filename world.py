@@ -1,7 +1,10 @@
 import math
-import numpy as np
 import random as rand
+import numpy as np
+
+import cv2
 from scipy.misc import imread
+
 import isovist
 
 SAFETY_MARGIN = 3
@@ -57,7 +60,32 @@ class World:
         self.initialize_treats(num_treats)
         self.isovist = isovist.Isovist(self.terrain)
 
+        print('  Creating validity map...')
         self.validity_map = self.create_validity_map()
+        print('  self.terrain', self.terrain)
+
+        print('  Storing contours...')
+        self.contours = self.detect_contours()
+
+    def detect_contours(self):
+        terrain = self.terrain.astype(np.uint8)
+        terrain = cv2.erode(terrain, np.ones((2, 2)), iterations=1)
+        terrain = cv2.dilate(terrain, np.ones((3, 3)), iterations=2)
+        print('np.mean(terrain)', np.mean(terrain))
+        terrain = cv2.cvtColor(cv2.cvtColor(terrain, cv2.COLOR_GRAY2BGR), cv2.COLOR_BGR2GRAY)
+        contours, hierarchy = cv2.findContours(terrain, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        contour_image = np.zeros((1000, 1000, 3))
+        cv2.drawContours(contour_image, contours, -1, (255, 255, 0), 1)
+        cv2.imwrite('contours.png', np.rot90(np.flipud(contour_image), k=3))
+
+        fixed_contours = []
+
+        for contour in contours:
+            fixed_contour = np.array([x[0] for x in contour])
+            fixed_contours.append(fixed_contour)
+
+        return fixed_contours
 
     def create_valid_squares(self):
         self.valid_squares = np.zeros([self.xdim,self.ydim])
@@ -179,7 +207,7 @@ class World:
         return (x>self.movement_bounds[0]) and (x<self.movement_bounds[1]) and (y>self.movement_bounds[2]) and (y<self.movement_bounds[3])
 
     def create_validity_map(self):
-        validity_map = np.zeros(self.terrain.shape)
+        validity_map = np.zeros((self.terrain.shape[0] + 1, self.terrain.shape[1] + 1))
 
         for y in range(self.terrain.shape[0]):
             for x in range(self.terrain.shape[1]):

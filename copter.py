@@ -70,7 +70,7 @@ class Copter:
 
         #select a waypoint at the center of the best region
         waypoint = ((most_likely_region[0] + most_likely_region[1])/2, (most_likely_region[2] + most_likely_region[3])/2)
-        print "NEW WAYPOINT SELECTED: " + str(waypoint)
+        # print "NEW WAYPOINT SELECTED: " + str(waypoint)
         return waypoint
 
     def step(self, priors=[]):

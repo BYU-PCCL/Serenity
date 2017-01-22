@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 
+STEP_SIZE = .01
+
 # python -m cProfile -s tottime my_rrt.py
 
 # adapted from the original matlab code at
@@ -63,7 +65,7 @@ def distance_to_other_points( pt, pts ):
     diffs = (pts - pt)**2.0
     return np.sum( diffs, axis=1, keepdims=True )
 
-def run_rrt( start_pt, goal_pt, polygons, bias=0.75, plot=False):
+def run_rrt( start_pt, goal_pt, polygons, scale, bias=0.75, plot=False, step_limit=2000):
     '''
     start_pt: 1 x 2 np array
     goal_pt: 1 x 2 np array
@@ -77,8 +79,8 @@ def run_rrt( start_pt, goal_pt, polygons, bias=0.75, plot=False):
     nodes = start_pt
     parents = np.atleast_2d( [0] )
 
-    for i in range( 0, 2000 ):
-        random_point = np.random.rand(1,2)
+    for i in range( 0, step_limit ):
+        random_point = np.random.rand(1,2) * scale
 
         # find nearest node
         distances = distance_to_other_points( random_point, nodes )
@@ -91,17 +93,18 @@ def run_rrt( start_pt, goal_pt, polygons, bias=0.75, plot=False):
         else:
             ndiff = random_point - nearest_point
 
-        ndiff = 0.05 * ndiff / np.sqrt( np.sum( ndiff*ndiff ) )
+        ndiff = (scale * STEP_SIZE) * ndiff / np.sqrt( np.sum( ndiff*ndiff ) )
         new_pt = nearest_point + ndiff
 
-        if distance_to_other_points( new_pt, goal_pt ) < 0.001:
+        if distance_to_other_points( new_pt, goal_pt ) < (.005 * scale):
+            print('i', i)
             path = [ new_pt[0,:] ]
             while nearest_ind != 0:
                 path.append( nodes[nearest_ind,:] )
                 nearest_ind = parents[ nearest_ind, 0 ]
             path.append( nodes[0,:] )
 
-            if plot:
+            if plot == True:
                 plt.figure()
                 for i in range(0, endpoint_a_x.shape[0]):
                     plt.plot( [ endpoint_a_x[i], endpoint_b_x[i] ], [ endpoint_a_y[i], endpoint_b_y[i] ], 'k' )
@@ -110,6 +113,8 @@ def run_rrt( start_pt, goal_pt, polygons, bias=0.75, plot=False):
                 plt.scatter( start_pt[0,0], start_pt[0,1] )
                 plt.scatter( goal_pt[0,0], goal_pt[0,1] )
                 plt.show()
+
+            path.reverse()
 
             return path
 
@@ -128,12 +133,13 @@ def run_rrt( start_pt, goal_pt, polygons, bias=0.75, plot=False):
             closest_intersection_index = np.argmin( distances )
             new_pt = intersections[ closest_intersection_index:closest_intersection_index+1, : ]
             safety = new_pt - nearest_point
-            safety = 0.001 * safety / np.sqrt( np.sum( safety*safety ) )
+            safety = scale * 0.001 * safety / np.sqrt( np.sum( safety*safety ) )
             new_pt = new_pt - safety
 
         nodes = np.vstack(( nodes, new_pt ))
         parents = np.vstack(( parents, nearest_ind ))
 
+    print('No path found!')
     return []
 
 # ==============================================================
@@ -144,7 +150,7 @@ if __name__ == '__main__':
     start_pt = np.atleast_2d( [0.1,0.1] )
     goal_pt = np.atleast_2d( [0.9,0.9] )
 
-    path = run_rrt( start_pt, goal_pt, polygons, plot=True)
+    path = run_rrt( start_pt, goal_pt, polygons, 1, plot=False)
 
 mypath = [0.88326248,  0.88557536,
 0.90324988,  0.8397441 ,

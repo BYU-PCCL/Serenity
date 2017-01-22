@@ -51,8 +51,10 @@ OBSTACLES = 10                #number of obstacles on the world map
 INTRUDER_TYPE = 1        #0 = momentum, 1 = waypoints
 MESSY_WORLD = True
 
-ROLLOUT_EPOCHS = int(1e3)
-ROLLOUT_TIME_STEPS = int(1e3)
+# ROLLOUT_EPOCHS = int(1e3)
+# ROLLOUT_TIME_STEPS = int(1e3)
+ROLLOUT_EPOCHS = 0
+ROLLOUT_TIME_STEPS = 0
 SHOW_INITIAL_PROBABILITY_MAP = False
 SHOW_SIMPLE_KERNEL = False
 SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
@@ -140,10 +142,13 @@ def policy_rollout(intruder_list):
         geographic_probability_map = np.zeros([intruder.xdim,intruder.ydim], dtype=np.float32)
 
         for i in range(int(ROLLOUT_EPOCHS)):
+            print('i', i)
             #start the intruder at a random location
             intruder.select_random_location()
+            intruder.select_waypoint()
 
             for j in range(int(ROLLOUT_TIME_STEPS)):
+                print('j', j)
 
                 #move the intruder to a new square
                 prev_x = intruder.x
@@ -154,6 +159,9 @@ def policy_rollout(intruder_list):
                 #to the intruder's new position
                 delta_x = intruder.x-prev_x
                 delta_y = intruder.y-prev_y
+
+                print('delta_x', delta_x)
+                print('delta_y', delta_y)
 
                 #update simple and complex kernels
                 simple_kernel[midpoint+delta_x][midpoint+delta_y] += 1
@@ -434,8 +442,13 @@ if HEADLESS != True:
     pygame.init()
     pygame.font.init()
 
+print('Initializing world...')
 w = world.World(XDIM, YDIM, TREATS, OBSTACLES)
+
+print('Initializing intruder...')
 i = intruder.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+
+print('Rolling out policy...')
 policy_rollout([i])
 PRIORS = i.geographic_probability_map
 
@@ -450,6 +463,8 @@ if HEADLESS != True:
 
 #while we haven't caught the intruder...
 done = False
+
+print('Entering main loop...')
 while done != True:
     if HEADLESS != True:
         for event in pygame.event.get(): #User did something
