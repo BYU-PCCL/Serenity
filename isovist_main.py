@@ -21,7 +21,7 @@ def InitScreen(xdim, ydim):
 	size = (xdim, ydim)
 	screen = pygame.display.set_mode(size)
 
-	pygame.display.set_caption("Map Sampling")
+	pygame.display.set_caption("Isovist")
 	clock = pygame.time.Clock()
 
 	return screen, clock
@@ -119,9 +119,9 @@ def main():
 	# Clear canvas
 	screen.fill((255,255,255))
 
-	s = pygame.Surface((xdim,ydim))  # the size of your rect
-	s.set_alpha(0)                # alpha level
-	s.fill((255,255,255))           # this fills the entire surface
+	s = pygame.Surface((xdim,ydim))  	# the size of your rect
+	s.set_alpha(0)                		# alpha level
+	s.fill((255,255,255))           	# this fills the entire surface
 	screen.blit(s, (0,0))
 
 	# Draw segments
@@ -132,7 +132,7 @@ def main():
 	Update()
 
 	isovist = iso.Isovist(polygonSegments)
-
+	center = (420, 180)
 	while True:
 		for e in pygame.event.get():
 			if e.type == QUIT or (e.type == KEYUP and e.key == K_ESCAPE):
@@ -151,14 +151,31 @@ def main():
 					pygame.draw.line(screen, (0, 0, 0), segment[0], segment[1],2)
 
 			mouse = pygame.mouse.get_pos()
+			pygame.draw.circle(screen, (100,100,100), center, 5)
 			pygame.draw.circle(screen, (100,100,100), mouse, 5)
 
-			intersections = isovist.GetIntersections(mouse)
+			# getting directions
+			dirx = mouse[0] - center[0]
+			diry = mouse[1] - center[1]
+			direction = (dirx, diry)
+
+			RRTPath = [mouse]
+			UAVLocation = center
+			UAVForwardVector = direction
+
+			isIntruderFound = isovist.IsIntruderSeen(RRTPath, UAVLocation, UAVForwardVector, UAVFieldOfVision = 45)
 			
+			intruderColor = (255,0,0)
+			if isIntruderFound:
+				intruderColor = (0,255,0)
+
 			# Draw Polygon for intersections (isovist)
 			isovist_surface = pygame.Surface((xdim,ydim)) 
 			isovist_surface.set_alpha(80)
-			pygame.draw.polygon(isovist_surface, (255,0,0), intersections)
+
+			# JUST for drawing the isovist
+			intersections = isovist.GetIsovistIntersections(UAVLocation, UAVForwardVector)
+			pygame.draw.polygon(isovist_surface, intruderColor, intersections)
 			screen.blit(isovist_surface, isovist_surface.get_rect())
 
 			Update()
