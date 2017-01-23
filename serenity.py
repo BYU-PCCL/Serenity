@@ -9,6 +9,8 @@ import sys
 from scipy import signal
 import time
 import tensorflow as tf
+import pickle
+import os
 
 import world
 import copter
@@ -42,8 +44,8 @@ ICON_SIZE = 10
 #YDIM = 500
 #XDIM = 1400
 #YDIM = 1000
-XDIM=1000
-YDIM=1000
+XDIM=100
+YDIM=100
 
 MODE = 1                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
@@ -55,9 +57,9 @@ ROLLOUT_EPOCHS = int(1e3)
 ROLLOUT_TIME_STEPS = int(1e3)
 SHOW_INITIAL_PROBABILITY_MAP = False
 SHOW_SIMPLE_KERNEL = False
-SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
-PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
-SHOW_ISOVIST = False
+SHOW_COMPLEX_KERNEL = False	#shows kernel at intruder's curreny xy coords
+PAUSE_BETWEEN_TIME_STEPS = 0 	#-1 prompts for input between steps
+SHOW_ISOVIST = True
 USE_VECTOR_MATRIX_MULTIPLY = False
 DOWNSAMPLE = 8                         #downsample factor for prior updates
 
@@ -437,6 +439,20 @@ if HEADLESS != True:
 w = world.World(XDIM, YDIM, TREATS, OBSTACLES)
 i = intruder.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
 policy_rollout([i])
+
+"""if SHOW_ISOVIST == True:
+    print "PRE-CALCULATING ISOVIST ENDPOINTS" 
+    precalculated_isovist = {}
+    if os.path.exists("isovist_points.pkl"):
+        pickle.load(precalculated_isovist)
+    else:
+        for x in range(0, XDIM):
+	    precalculated_isovist[x] = {}
+            for y in range(0, YDIM):
+                precalculated_isovist[x][y] = w.isovist.FindIsovistForAgent(x,y)
+        f = open("isovist_points.pkl", 'w')
+        pickle.dump(precalculated_isovist, f)
+"""
 PRIORS = i.geographic_probability_map
 
 c = copter.Copter(w)

@@ -295,8 +295,8 @@ def on_resize(width,height):
 
 @window.timer(1/60.)
 def timer(fps):
-#    global telapsed
-#    quad['u_texture'] += 1
+    global telapsed
+    quad['u_texture'] += 1
 #    pnt_cloud['position'][...,2] += 0.01*np.sin( telapsed )
 #    bldgs['position'][...,2] += 0.01*np.sin( telapsed )
 #    telapsed += 0.1

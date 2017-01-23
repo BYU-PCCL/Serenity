@@ -2,8 +2,6 @@ import math
 import numpy as np
 import random as rand
 
-INTRUDER_TYPE = 1 #0 = momentum, 1 = waypoints
-
 class Intruder:
 
     def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=4, start_x=-1, start_y=-1):
@@ -33,29 +31,6 @@ class Intruder:
 
     def random_location(self):
         pass
-
-    def momentum_step(self):
-        self.momentum_x += rand.randint(-1, 1)
-        self.momentum_y += rand.randint(-1, 1)
-        if abs(self.momentum_x) > self.MAX_SPEED:
-            self.momentum_x = 0
-        if abs(self.momentum_y) > self.MAX_SPEED:
-            self.momentum_y = 0
-        
-        new_x = self.x
-        new_y = self.y
-        
-        new_x = max(0, new_x + self.momentum_x)
-        new_y = max(0, new_y + self.momentum_y)
-        new_x = min(self.xdim-1, new_x)
-        new_y = min(self.ydim-1, new_y)
-        
-        if self.my_world.is_valid(new_x, new_y):
-            self.x = new_x
-            self.y = new_y
-        else:
-            self.momentum_x = 0
-            self.momentum_y = 0
 
     def select_waypoint(self):
         if self.target == "" or self.my_world.num_treats==0:
@@ -119,10 +94,8 @@ class Intruder:
 
 
     def step(self):
-        if INTRUDER_TYPE == 0:
-            self.momentum_step()
-        else:
-            self.waypoint_step()
+	#self.momentum_step()
+	self.waypoint_step()
 
     def select_random_location(self):
         x1,x2,y1,y2 = self.my_world.movement_bounds[0], self.my_world.movement_bounds[1], self.my_world.movement_bounds[2], self.my_world.movement_bounds[3]
@@ -147,3 +120,29 @@ class Trespasser(Intruder):
 
     def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=4, start_x=-1, start_y=-1):
         Intruder.__init__(self, my_world, MESSY_WORLD, target, max_speed, start_x, start_y)
+
+    def momentum_step(self):
+	self.momentum_x += rand.randint(-1, 1)
+	self.momentum_y += rand.randint(-1, 1)
+	if abs(self.momentum_x) > self.MAX_SPEED:
+	    self.momentum_x = 0
+	if abs(self.momentum_y) > self.MAX_SPEED:
+	    self.momentum_y = 0
+	
+	new_x = self.x
+	new_y = self.y
+	
+	new_x = max(0, new_x + self.momentum_x)
+	new_y = max(0, new_y + self.momentum_y)
+	new_x = min(self.xdim-1, new_x)
+	new_y = min(self.ydim-1, new_y)
+	
+	if self.my_world.is_valid(new_x, new_y):
+	    self.x = new_x
+	    self.y = new_y
+	else:
+	    self.momentum_x = 0
+	    self.momentum_y = 0
+
+    def step(self):
+	self.momentum_step()
