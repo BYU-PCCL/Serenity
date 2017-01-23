@@ -40,18 +40,39 @@ class Isovist:
         self.polygon_map = polygon_map
         self.uniquePoints = self.GetUniquePoints()
 
+        #BY DEFAULT field of vision is set to 40 degrees
+        self.UAVFieldOfVision = 40
+        self.fieldOfVision = math.radians(self.UAVFieldOfVision/2.0)
+
 
     def IsIntruderSeen(self, RRTPath, UAVLocation, UAVForwardVector, UAVFieldOfVision = 40):
-        self.fieldOfVision = math.radians(UAVFieldOfVision/2.0)
+    	# Setting customized UAV Field of vision
+    	self.UAVFieldOfVision =  UAVFieldOfVision
+
+        self.fieldOfVision = math.radians(self.UAVFieldOfVision/2.0)
         self.forwardVector = UAVForwardVector
 
         intersections = self.GetIsovistIntersections(UAVLocation, UAVForwardVector)
-        #print "\n\n ISOVIST:", intersections
 
         for point in RRTPath:
             isFound = self.FindIntruderAtPoint(point, intersections)
             if isFound:
                 return True
+
+        for i in xrange(1,len(RRTPath)):
+        	segment = (RRTPath[i-1], RRTPath[i])
+        	
+        	for j in xrange(1,len(intersections)):
+        		isovist_segment = (intersections[j-1], intersections[j])
+        		intersect, param = self.GetIntersection(segment, isovist_segment)
+        		if intersect != None:
+        			return True
+        	#Check the closing of the polygon segment
+        	isovist_segment = (intersections[0], intersections[-1])
+        	intersect, param = self.GetIntersection(segment, isovist_segment)
+        	if intersect != None:
+        		return True
+
         return False
 
 
@@ -68,7 +89,11 @@ class Isovist:
             return True
         return False
 
-    def GetIsovistIntersections(self, agentLocation, direction):
+    def GetIsovistIntersections(self, agentLocation, direction, UAVFieldOfVision = 40):
+    	#Setting customized UAV Field of vision
+    	self.UAVFieldOfVision =  UAVFieldOfVision
+        self.fieldOfVision = math.radians(self.UAVFieldOfVision/2.0)
+
         self.agentLocation = agentLocation
         uniqueAngles = self.GetUniqueAngles(direction)
 
@@ -173,6 +198,8 @@ class Isovist:
         r_mag = math.sqrt(r_dx ** 2 + r_dy ** 2)
         s_mag = math.sqrt(s_dx ** 2 + s_dy ** 2)
 
+        if r_mag == 0 or s_mag == 0:
+        	return None, None
         # PARALLEL - no intersection
         if (r_dx/r_mag) == (s_dx/s_mag):
             if (r_dy/r_mag) == (s_dy/s_mag):
