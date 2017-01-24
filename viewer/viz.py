@@ -74,16 +74,16 @@ def make_gloo_indices( start, end ):
     return np.asarray( range(start,end), dtype=np.uint32 ).view( gloo.IndexBuffer )
 
 rrt_index = 0
-rx1,ry1,rx2,ry2 = polys_to_segs( load_polys( "./paths.txt" ) )
+rx1,ry1,rx2,ry2 = polygons_to_segments( load_polygons( "./paths.txt" ) )
 
 def sample_rrt( ):
     global Q, rrt_index, rx1,ry1,rx2,ry2
 
-#    start_pt = np.atleast_2d( [0.1,0.1] )
-#    goal_pt = np.atleast_2d( [0.9,0.9] )
+    start_pt = np.atleast_2d( [0.1,0.1] )
+    goal_pt = np.atleast_2d( [0.9,0.9] )
 
-    start_pt = S_intruder_loc( Q )
-    goal_pt = S_goal_loc( Q )
+#    start_pt = S_intruder_loc( Q )
+#    goal_pt = S_goal_loc( Q )
 
     path = run_rrt( start_pt, goal_pt, rx1,ry1,rx2,ry2 )
 
