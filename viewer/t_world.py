@@ -38,9 +38,9 @@ class Tworld( object ):
 
         self.isovist = iso.Isovist( [self.listify_segs(rx1,ry1,rx2,ry2)] )
 
-        self.UAVLocation = ( 0.5, 0.11 )
+        #self.UAVLocation = ( 0.5, 0.11 )
         #self.UAVLocation = ( 0.2, 0.82 )
-        #self.UAVLocation = ( 0.2, 0.801 )
+        self.UAVLocation = ( 0.2, 0.801 )
 
         self.UAVForwardVector = ( 0.0, 0.010 )
 
@@ -51,8 +51,11 @@ class Tworld( object ):
         return result
 
     def run( self, Q ):
-        sc = Q.choice( p=1.0/3.0*np.ones((1,3)), name="sloc" )
-        gc = Q.choice( p=1.0/3.0*np.ones((1,3)), name="gloc" )
+#        sc = Q.choice( p=1.0/3.0*np.ones((1,3)), name="sloc" )
+#        gc = Q.choice( p=1.0/3.0*np.ones((1,3)), name="gloc" )
+
+        sc = Q.choice( p=a2d([0.2,0.4,0.4]), name="sloc" )
+        gc = Q.choice( p=a2d([0.2,0.4,0.4]), name="gloc" )
 
         start_loc = a2d( self.locs[ sc ] )
         goal_loc = a2d( self.locs[ gc ] )
@@ -69,6 +72,6 @@ class Tworld( object ):
         else:
             p = 0.1
             
-        Q.flip( p=p, name="data" )
+#        Q.flip( p=p, name="data" )
 
         return sc,gc,isIntruderFound
