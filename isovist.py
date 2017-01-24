@@ -1,6 +1,4 @@
 import math
-import pygame
-from pygame.locals import *
 import random as rand
 import numpy as np
 import sys
@@ -217,7 +215,7 @@ class Isovist:
             x = r_px+r_dx*T2
             y = r_py+r_dy*T2
             param = T2
-            return (int(x),int(y)), param
+            return ( x, y ), param
 
         return None, None
 
