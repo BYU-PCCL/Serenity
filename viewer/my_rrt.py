@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 
 # python -m cProfile -s tottime my_rrt.py
@@ -42,7 +41,7 @@ def load_polygons( fn="./paths.txt" ):
 # first entry is the mean of all the points
 # last entry in the matrix is the same as the first
 # returns x1,y1, x2,y2
-def polgons_to_segments( polygon_list ):
+def polygons_to_segments( polygon_list ):
     X1 = []
     Y1 = []
     X2 = []
@@ -63,7 +62,7 @@ def distance_to_other_points( pt, pts ):
     diffs = (pts - pt)**2.0
     return np.sum( diffs, axis=1, keepdims=True )
 
-def run_rrt( start_pt, goal_pt, polygons, bias=0.75, plot=False):
+def run_rrt_poly( start_pt, goal_pt, polygons, bias=0.75, plot=False):
     '''
     start_pt: 1 x 2 np array
     goal_pt: 1 x 2 np array
@@ -72,8 +71,10 @@ def run_rrt( start_pt, goal_pt, polygons, bias=0.75, plot=False):
 
     returns a list of length 2 np arrays describing the path from `start_pt` to `goal_pt`
     '''
-    endpoint_a_x, endpoint_a_y, endpoint_b_x, endpoint_b_y = polgons_to_segments( polygons )
+    x1, y1, x2, y2 = polygons_to_segments( polygons )
+    return rrt_rrt( start_pt, goal_pt, x1, y1, x2, y2, bias, plt )
 
+def run_rrt( start_pt, goal_pt, endpoint_a_x, endpoint_a_y, endpoint_b_x, endpoint_b_y,  bias=0.75, plot=False ):
     nodes = start_pt
     parents = np.atleast_2d( [0] )
 
@@ -144,7 +145,7 @@ if __name__ == '__main__':
     start_pt = np.atleast_2d( [0.1,0.1] )
     goal_pt = np.atleast_2d( [0.9,0.9] )
 
-    path = run_rrt( start_pt, goal_pt, polygons, plot=True)
+    path = run_rrt_poly( start_pt, goal_pt, polygons, plot=True)
 
 mypath = [0.88326248,  0.88557536,
 0.90324988,  0.8397441 ,

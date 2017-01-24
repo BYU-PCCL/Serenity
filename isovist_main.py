@@ -129,6 +129,13 @@ def main():
 		for segment in polygon:
 			pygame.draw.line(screen, (0, 0, 0), segment[0], segment[1],2)
 
+	RRTPath = [(200, 120), ( 450, 200)]
+	#Draw hard coded RRT Path
+	pygame.draw.line(screen, (0, 0, 255), RRTPath[0], RRTPath[1],2)
+
+	for point in RRTPath:
+		pygame.draw.circle(screen, (255,100,255), point, 5)
+
 	Update()
 
 	isovist = iso.Isovist(polygonSegments)
@@ -159,7 +166,11 @@ def main():
 			diry = mouse[1] - center[1]
 			direction = (dirx, diry)
 
-			RRTPath = [mouse]
+			#Draw hard coded RRT Path
+			pygame.draw.line(screen, (0, 0, 255), RRTPath[0], RRTPath[1],2)
+			for point in RRTPath:
+				pygame.draw.circle(screen, (255,100,255), point, 5)
+
 			UAVLocation = center
 			UAVForwardVector = direction
 
