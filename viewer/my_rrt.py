@@ -7,7 +7,6 @@ import time
 # adapted from the original matlab code at
 # http://www.mathworks.com/matlabcentral/fileexchange/27205-fast-line-segment-intersection
 def line_intersect( X1,Y1,X2,Y2, X3,Y3,X4,Y4 ):
-
     X4_X3 = X4.T - X3.T
     Y1_Y3 = Y1   - Y3.T
     Y4_Y3 = Y4.T - Y3.T
@@ -24,31 +23,31 @@ def line_intersect( X1,Y1,X2,Y2, X3,Y3,X4,Y4 ):
 
     INT_X = X1 + X2_X1 * u_a
     INT_Y = Y1 + Y2_Y1 * u_a
-    INT_B = (u_a >= 0) & (u_a <= 1) & (u_b >= 0) & (u_b <= 1)
+    did_intersect = (u_a >= 0) & (u_a <= 1) & (u_b >= 0) & (u_b <= 1)
 
-    return INT_X, INT_Y, INT_B
+    return INT_X, INT_Y, did_intersect
 
-def load_polys( fn="./paths.txt" ):
+def load_polygons( fn="./paths.txt" ):
     bdata = []
     for x in open( fn ):
         tmp = np.fromstring( x, dtype=float, sep=' ' )
         tmp = np.reshape( tmp/1000.0, (-1,2) )
-        tmp = np.vstack(( np.mean(tmp,axis=0,keepdims=True), tmp, tmp[0,:] ))
+        tmp = np.vstack(( np.mean(tmp, axis=0, keepdims=True), tmp, tmp[0,:] ))
         tmp[:,1] = 1.0 - tmp[:,1]  # flip on the y axis
         bdata.append( tmp )
     return bdata
 
-# bdata is a list of np arrays
+# polygon_list is a list of np arrays
 # each nparray is a kx2 matrix, representing x,y points
 # first entry is the mean of all the points
 # last entry in the matrix is the same as the first
 # returns x1,y1, x2,y2
-def polys_to_segs( bdata ):
+def polgons_to_segments( polygon_list ):
     X1 = []
     Y1 = []
     X2 = []
     Y2 = []
-    for x in bdata:
+    for x in polygon_list:
         X1.append( x[1:-1,0:1] )
         Y1.append( x[1:-1,1:2] )
         X2.append( x[2:,0:1] )
@@ -60,49 +59,75 @@ def polys_to_segs( bdata ):
 
     return X1, Y1, X2, Y2
 
-def ddist( pt, pts ):
+def distance_to_other_points( pt, pts ):
     diffs = (pts - pt)**2.0
     return np.sum( diffs, axis=1, keepdims=True )
 
-def run_rrt( start_pt, goal_pt, rx1,ry1,rx2,ry2, bias=0.75 ):
+def run_rrt( start_pt, goal_pt, polygons, bias=0.75, plot=False):
+    '''
+    start_pt: 1 x 2 np array
+    goal_pt: 1 x 2 np array
+    polygons: list (polygons) of n x 2 (x, y) np arrays
+    bias: 
+
+    returns a list of length 2 np arrays describing the path from `start_pt` to `goal_pt`
+    '''
+    endpoint_a_x, endpoint_a_y, endpoint_b_x, endpoint_b_y = polgons_to_segments( polygons )
+
     nodes = start_pt
     parents = np.atleast_2d( [0] )
 
     for i in range( 0, 2000 ):
-        r_pt = np.random.rand(1,2)
+        random_point = np.random.rand(1,2)
 
         # find nearest node
-        dists = ddist( r_pt, nodes )
-        nearest_ind = np.argmin( dists )
-        near_pt = nodes[ nearest_ind:nearest_ind+1, : ]
+        distances = distance_to_other_points( random_point, nodes )
+        nearest_ind = np.argmin( distances )
+        nearest_point = nodes[ nearest_ind:nearest_ind+1, : ]
 
         # take a step towards the goal
         if np.random.rand() > bias:
-            ndiff = goal_pt - near_pt
+            ndiff = goal_pt - nearest_point
         else:
-            ndiff = r_pt- near_pt
+            ndiff = random_point - nearest_point
 
         ndiff = 0.05 * ndiff / np.sqrt( np.sum( ndiff*ndiff ) )
-        new_pt = near_pt + ndiff
+        new_pt = nearest_point + ndiff
 
-        if ddist( new_pt, goal_pt ) < 0.001:
+        if distance_to_other_points( new_pt, goal_pt ) < 0.001:
             path = [ new_pt[0,:] ]
             while nearest_ind != 0:
                 path.append( nodes[nearest_ind,:] )
                 nearest_ind = parents[ nearest_ind, 0 ]
             path.append( nodes[0,:] )
+
+            if plot:
+                plt.figure()
+                for i in range(0, endpoint_a_x.shape[0]):
+                    plt.plot( [ endpoint_a_x[i], endpoint_b_x[i] ], [ endpoint_a_y[i], endpoint_b_y[i] ], 'k' )
+                for i in range( 0, len(path)-1 ):
+                    plt.plot( [ path[i][0], path[i+1][0] ], [ path[i][1], path[i+1][1] ], 'b' )
+                plt.scatter( start_pt[0,0], start_pt[0,1] )
+                plt.scatter( goal_pt[0,0], goal_pt[0,1] )
+                plt.show()
+
             return path
 
-        # we'd like to expand from near_pt to new_pt.  Does it cross a wall?
-        int_x, int_y, int_b = line_intersect( near_pt[0,0], near_pt[0,1], new_pt[0,0], new_pt[0,1], rx1, ry1, rx2, ry2 )
+        # we'd like to expand from nearest_point to new_pt.  Does it cross a wall?
+        int_x, int_y, intersection_indicators = line_intersect( 
+            nearest_point[0,0], 
+            nearest_point[0,1], 
+            new_pt[0,0], 
+            new_pt[0,1], 
+            endpoint_a_x, endpoint_a_y, endpoint_b_x, endpoint_b_y)
 
-        if int_b.any():
+        if intersection_indicators.any():
             # calculate nearest intersection and trim new_pt
-            ints = np.atleast_2d( [ int_x[int_b], int_y[int_b] ] ).T
-            dists = ddist( near_pt, ints )
-            min_int_ind = np.argmin( dists )
-            new_pt = ints[ min_int_ind:min_int_ind+1, : ]
-            safety = new_pt - near_pt
+            intersections = np.atleast_2d( [ int_x[intersection_indicators], int_y[intersection_indicators] ] ).T
+            distances = distance_to_other_points( nearest_point, intersections )
+            closest_intersection_index = np.argmin( distances )
+            new_pt = intersections[ closest_intersection_index:closest_intersection_index+1, : ]
+            safety = new_pt - nearest_point
             safety = 0.001 * safety / np.sqrt( np.sum( safety*safety ) )
             new_pt = new_pt - safety
 
@@ -112,6 +137,14 @@ def run_rrt( start_pt, goal_pt, rx1,ry1,rx2,ry2, bias=0.75 ):
     return []
 
 # ==============================================================
+
+if __name__ == '__main__':
+    polygons = load_polygons( "./paths.txt" )
+    
+    start_pt = np.atleast_2d( [0.1,0.1] )
+    goal_pt = np.atleast_2d( [0.9,0.9] )
+
+    path = run_rrt( start_pt, goal_pt, polygons, plot=True)
 
 mypath = [0.88326248,  0.88557536,
 0.90324988,  0.8397441 ,
@@ -178,43 +211,19 @@ mypath = [0.88326248,  0.88557536,
 0.14738945,  0.17723302,
 0.13535534,  0.13535534,
 0.1,  0.1]
-
-# ==============================================================
-
-if __name__ == '__main__':
-
-    bdata = load_polys( "./paths.txt" )
-    rx1,ry1,rx2,ry2 = polys_to_segs( bdata )
-
-    start_pt = np.atleast_2d( [0.1,0.1] )
-    goal_pt = np.atleast_2d( [0.9,0.9] )
-
-    path = run_rrt( start_pt, goal_pt, rx1,ry1,rx2,ry2 )
-
-    plt.figure()
-    for i in range(0,rx1.shape[0]):
-        plt.plot( [ rx1[i], rx2[i] ], [ ry1[i], ry2[i] ], 'k' )
-    for i in range( 0, len(path)-1 ):
-        plt.plot( [ path[i][0], path[i+1][0] ], [ path[i][1], path[i+1][1] ], 'b' )
-    plt.scatter( start_pt[0,0], start_pt[0,1] )
-    plt.scatter( goal_pt[0,0], goal_pt[0,1] )
-    plt.show()
-
-
 # ECNT = 100
 # biases = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
 # results = np.zeros(( len(biases), ECNT ))
 # for bi,b in enumerate( biases ):
 #     for k in range(0,ECNT):
-#         nodes, parents = run_rrt( start_pt, goal_pt, rx1,ry1,rx2,ry2, bias=b )
+#         nodes, parents = run_rrt( start_pt, goal_pt, endpoint_a_x,endpoint_a_y,endpoint_b_x,endpoint_b_y, bias=b )
 #         results[bi,k] = nodes.shape[0]
 #     print "%.2f: mean=%.2f (var=%.2f)" % ( biases[bi], np.mean( results[bi,:] ), np.var( results[bi,:]) )
 # plt.figure()
-# for i in range(0,rx1.shape[0]):
-#     plt.plot( [ rx1[i], rx2[i] ], [ ry1[i], ry2[i] ], 'k' )
+# for i in range(0,endpoint_a_x.shape[0]):
+#     plt.plot( [ endpoint_a_x[i], endpoint_b_x[i] ], [ endpoint_a_y[i], endpoint_b_y[i] ], 'k' )
 # for i in range(0,nodes.shape[0]):
 #     plt.plot( [nodes[i,0],nodes[parents[i],0]], [nodes[i,1],nodes[parents[i],1]], 'b' )
 # plt.scatter( start_pt[0,0], start_pt[0,1] )
 # plt.scatter( goal_pt[0,0], goal_pt[0,1] )
 # plt.show()
-

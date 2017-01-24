@@ -16,8 +16,8 @@ class Hough:
 
 	def GetLineSegments(self, edges):
 		segments = []
-		lines = cv2.HoughLines(edges,1,np.pi/180,150)
-
+		lines = cv2.HoughLines(edges,1,np.pi/180,100)
+		print "Lines:", lines
 		for line in lines:
 			rho = line[0][0]
 			theta = line[0][1]
@@ -36,17 +36,35 @@ class Hough:
 
 	def DrawSegments(self, segments):
 		for line in segments:
-			cv2.line(self.image,line[0],line[1],(0,0,255),2)
+			cv2.line(self.image,line[0],line[1],(255,0,0),2)
 		
-		cv2.imwrite('houghlines.jpg',self.image)
+		cv2.imwrite('houghlines-test.png',self.image)
+
 
 def main():
-	h = Hough(imageName='sudoku-original.jpg')
-	edges = h.TransformImage()
-	print edges
 
-	segments = h.GetLineSegments(edges)
-	h.DrawSegments(segments)
+	img = cv2.imread('../point_clouds/bremen_altstadt_final.png')
+	gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+	edges = cv2.Canny(gray,50,150,apertureSize = 3)
+	minLineLength = 1000
+	maxLineGap = 10
+	lines = cv2.HoughLinesP(edges,1,np.pi/180,50,minLineLength,maxLineGap)
+	#print lines
+	for line in lines:
+		x1 = line[0][0]
+		y1 = line[0][1]
+		x2 = line[0][2]
+		y2 = line[0][3]
+		cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
+
+	cv2.imwrite('houghlines5.jpg',img)`	q1
+
+	# h = Hough(imageName='../point_clouds/bremen_altstadt_final.png')
+	# edges = h.TransformImage()
+	# print edges
+
+	# segments = h.GetLineSegments(edges)
+	# h.DrawSegments(segments)
 
 if __name__ == '__main__':
     main()		

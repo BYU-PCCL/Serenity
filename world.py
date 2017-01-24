@@ -55,7 +55,7 @@ class World:
         self.read_point_cloud_image('point_clouds/bremen_altstadt_final.png')
         self.create_valid_squares()
         self.initialize_treats(num_treats)
-        self.isovist = isovist.Isovist(self.terrain)
+        #self.isovist = isovist.Isovist(self.terrain)
 
         self.validity_map = self.create_validity_map()
 
