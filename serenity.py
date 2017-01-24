@@ -370,19 +370,19 @@ def paint_to_screen(PRIORS, w, c, i):
         screen.blit(img, img.get_rect())
         
         #ISOVIST
-        if SHOW_ISOVIST == True:
-            drone_isovist = w.isovist.FindIsovistForAgent(c.x,c.y)
-            for point in drone_isovist:
-                #print point
-                x = point[0]
-                y = point[1]
-                pygame.draw.rect(screen, DRK_GREEN, [x - ICON_SIZE/4, y - ICON_SIZE/4, ICON_SIZE/2, ICON_SIZE/2])
-            if len(drone_isovist) > 2:
-                #isovist_surface = pygame.Surface((XDIM,YDIM))
-                isovist_surface = pygame.surfarray.make_surface((PRIORS*COLOR_SCALE).astype(int))
-                isovist_surface.set_alpha(80)
-                pygame.draw.polygon(isovist_surface, WHITE, drone_isovist)
-                screen.blit(isovist_surface, isovist_surface.get_rect())
+        # if SHOW_ISOVIST == True:
+        #     drone_isovist = w.isovist.FindIsovistForAgent(c.x,c.y)
+        #     for point in drone_isovist:
+        #         #print point
+        #         x = point[0]
+        #         y = point[1]
+        #         pygame.draw.rect(screen, DRK_GREEN, [x - ICON_SIZE/4, y - ICON_SIZE/4, ICON_SIZE/2, ICON_SIZE/2])
+        #     if len(drone_isovist) > 2:
+        #         #isovist_surface = pygame.Surface((XDIM,YDIM))
+        #         isovist_surface = pygame.surfarray.make_surface((PRIORS*COLOR_SCALE).astype(int))
+        #         isovist_surface.set_alpha(80)
+        #         pygame.draw.polygon(isovist_surface, WHITE, drone_isovist)
+        #         screen.blit(isovist_surface, isovist_surface.get_rect())
 
 
         #TREATS
