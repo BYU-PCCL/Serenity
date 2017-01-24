@@ -21,15 +21,18 @@ def visualize_segments(image, segments):
   return image
 
 def visualize_position(image, position):
-  cv2.circle(image, tuple(position), 10, RED, -1)
-  cv2.circle(image, tuple(position), 18, RED, 2)
+  cv2.circle(image, tuple(position), 6, RED, -1)
+  cv2.circle(image, tuple(position), 14, RED, 2)
   cv2.imwrite('results/with-position.png', image)
   return image
 
 def visualize_polygons(image, polygons):
   for polygon in polygons:
-    new_ploygon = np.clip(np.array(polygon), 1, CANVAS_SIZE-1).astype(int)
-    cv2.fillConvexPoly(image, new_ploygon, GREEN)
+    new_polygon = np.clip(np.array(polygon), 1, CANVAS_SIZE-1).astype(int)
+    try:
+      cv2.fillConvexPoly(image, new_polygon, GREEN)
+    except:
+      print('Throwing out bad polygon.')
 
   cv2.imwrite('results/with-polygons.png', image)
   return image
