@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 
 # python -m cProfile -s tottime my_rrt.py
