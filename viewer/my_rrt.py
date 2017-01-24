@@ -27,6 +27,18 @@ def line_intersect( X1,Y1,X2,Y2, X3,Y3,X4,Y4 ):
 
     return INT_X, INT_Y, did_intersect
 
+
+#
+# loads a set of polygons
+#
+# note that this appends the first point to also be the last point.
+# this function assumes that the list is given in "open" form; by
+# appending the first point as the last point, it ensures that the
+# resulting polygon is exactly closed.
+#
+# note that this prepends a single point that is the mean of all the other points.
+# this is for drawing the polygons using a GL_TRIANGLE_FAN.  It's a total hack.
+#
 def load_polygons( fn="./paths.txt" ):
     bdata = []
     for x in open( fn ):
@@ -39,7 +51,7 @@ def load_polygons( fn="./paths.txt" ):
 
 # polygon_list is a list of np arrays
 # each nparray is a kx2 matrix, representing x,y points
-# first entry is the mean of all the points
+# first entry is the mean of all the points, which is SKIPPED
 # last entry in the matrix is the same as the first
 # returns x1,y1, x2,y2
 def polygons_to_segments( polygon_list ):
