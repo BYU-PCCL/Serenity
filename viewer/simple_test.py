@@ -19,20 +19,9 @@ Q.set_model( model )
 
 Q.analyze()
 
-SS = 0.01
+results, scores = Q.opt_sgd()
+results, scores = Q.opt_adam()
 
-results = []
+data = np.vstack( results )
+plt.plot( data ); plt.show()
 
-for iter in range( 0, 100 ):
-
-    score = Q.calc_rolled_out_gradient( cnt=10 )
-    print "\n%d: %.2f" % ( iter, score )
-
-    results.append( np.copy( Q.var_db[ "gloc" ][ "p" ] ) )
-
-    for k in Q.grad_db:
-        for j in Q.grad_db[ k ]:
-            print "[%s][%s]" % (k,j)
-            print "  ", Q.var_db[ k ][ j ]
-            print "  ", Q.grad_db[ k ][ j ]
-            Q.var_db[ k ][ j ] -= SS * Q.grad_db[ k ][ j ]
