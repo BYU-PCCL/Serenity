@@ -11,17 +11,20 @@ INTRUDER_TYPE = 1 #0 = momentum, 1 = waypoints
 
 class Intruder:
 
-    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=1, start_x=-1, start_y=-1):
+    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=1, start_x=-1, start_y=-1, use_rrt=False):
         print('Initializing intruder...')
         self.xdim = my_world.xdim
         self.ydim = my_world.ydim
         self.my_world = my_world
         self.target = target
         self.MAX_SPEED = max_speed
+        self.use_rrt = use_rrt
+
         if start_x == -1:
            self.x = rand.randint(0, self.xdim)
         else:
            self.x = start_x
+
         if start_y == -1:
            self.y = rand.randint(0, self.ydim)
         else:
@@ -92,16 +95,10 @@ class Intruder:
             self.momentum_y = 0
 
     def select_waypoint(self):
-        print('Intruder selecting waypoint.')
 
-
-        if self.target == "" or self.my_world.num_treats==0:
+        if (self.target == "" or self.my_world.num_treats == 0) or \
+           (self.MESSY_WORLD == True and rand.randint(0,1) == 0 ):
             waypoint = (rand.randint(0, self.xdim-1), rand.randint(0, self.ydim-1))
-
-        elif self.MESSY_WORLD == True and rand.randint(0,1) == 0 :
-            print('Intruder chooses random waypoint.')
-            waypoint = (rand.randint(0,self.xdim-1), rand.randint(0,self.ydim-1))
-        
         #select a targeted waypoint the other half of the time
         elif self.target=="cookies":
             index = rand.randint(0,self.my_world.num_treats-1)
@@ -112,30 +109,22 @@ class Intruder:
         #if self.target=="truffles":
         #        index = rand.randint(0,self.my_world.num_treats-1)
         #        waypoint = self.my_world.truffles[index]
-    
-        self.path = self.generate_path_to_point(waypoint)
-
-        if len(self.path) < 5 or not self.my_world.is_valid(waypoint[0], waypoint[1]):
+        
+        if not self.my_world.is_valid(waypoint[0], waypoint[1]):
             self.select_waypoint()
 
-        self.count = 0
-        self.path_progress = 0
+        if self.use_rrt:
+            self.path = self.generate_path_to_point(waypoint)
+
+            if len(self.path) < 5:
+                self.select_waypoint()
+
+            self.count = 0
+            self.path_progress = 0
 
         return waypoint
 
     def waypoint_step(self):
-        new_x = self.path[self.path_progress][0]
-        new_y = self.path[self.path_progress][1]
-        self.path_progress = self.path_progress + 1
-
-        self.x = new_x
-        self.y = new_y
-
-        # self.momentum_x += 1
-        # self.momentum_y += 1
-        # self.momentum_x = min(self.MAX_SPEED, self.momentum_x)
-        # self.momentum_y = min(self.MAX_SPEED, self.momentum_y)
-        
         if abs(self.x - self.waypoint[0]) < 10 and abs(self.y - self.waypoint[1]) < 10:
            #pick a new waypoint 
            self.path_progress = 0
@@ -143,28 +132,44 @@ class Intruder:
            self.momentum_x = 1
            self.momentum_y = 1
 
-        # jitter = 0
-        # if self.MESSY_WORLD == True:
-        #     jitter = rand.randint(0,2) - 1
+        if self.use_rrt:
+            print('self.path_progress', self.path_progress)
+            new_x = self.path[self.path_progress][0]
+            new_y = self.path[self.path_progress][1]
+            self.path_progress = self.path_progress + 1
 
-        # new_x = self.x
-        # new_y = self.y
-        # if self.waypoint[0] > self.x:
-        #     new_x = self.x + (self.momentum_x+jitter) 
-        # if self.waypoint[0] < self.x:
-        #     new_x = self.x - (self.momentum_x+jitter) 
-        # if self.waypoint[1] > self.y:
-        #     new_y = self.y + (self.momentum_y+jitter) 
-        # if self.waypoint[1] < self.y:
-        #     new_y = self.y - (self.momentum_y+jitter) 
+            self.x = new_x
+            self.y = new_y
+        else:
+            self.momentum_x += 1
+            self.momentum_y += 1
+            self.momentum_x = min(self.MAX_SPEED, self.momentum_x)
+            self.momentum_y = min(self.MAX_SPEED, self.momentum_y)
+            
 
-        # if self.my_world.is_valid(new_x, new_y):
-        #     self.x = new_x
-        #     self.y = new_y
-        # else:
-        #     self.count += 1
-        #     if self.count > 5:
-        #         self.waypoint = self.select_waypoint()
+            jitter = 0
+            if self.MESSY_WORLD == True:
+                jitter = rand.randint(0,2) - 1
+
+            new_x = self.x
+            new_y = self.y
+
+            if self.waypoint[0] > self.x:
+                new_x = self.x + (self.momentum_x+jitter) 
+            if self.waypoint[0] < self.x:
+                new_x = self.x - (self.momentum_x+jitter) 
+            if self.waypoint[1] > self.y:
+                new_y = self.y + (self.momentum_y+jitter) 
+            if self.waypoint[1] < self.y:
+                new_y = self.y - (self.momentum_y+jitter) 
+
+            if self.my_world.is_valid(new_x, new_y):
+                self.x = new_x
+                self.y = new_y
+            else:
+                self.count += 1
+                if self.count > 5:
+                    self.waypoint = self.select_waypoint()
 
 
     def step(self):

@@ -51,10 +51,10 @@ OBSTACLES = 10                #number of obstacles on the world map
 INTRUDER_TYPE = 1        #0 = momentum, 1 = waypoints
 MESSY_WORLD = True
 
-# ROLLOUT_EPOCHS = int(1e3)
-# ROLLOUT_TIME_STEPS = int(1e3)
-ROLLOUT_EPOCHS = 0
-ROLLOUT_TIME_STEPS = 0
+ROLLOUT_EPOCHS = int(1e3)
+ROLLOUT_TIME_STEPS = int(1e3)
+# ROLLOUT_EPOCHS = 0
+# ROLLOUT_TIME_STEPS = 0
 SHOW_INITIAL_PROBABILITY_MAP = False
 SHOW_SIMPLE_KERNEL = False
 SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
@@ -142,13 +142,11 @@ def policy_rollout(intruder_list):
         geographic_probability_map = np.zeros([intruder.xdim,intruder.ydim], dtype=np.float32)
 
         for i in range(int(ROLLOUT_EPOCHS)):
-            print('i', i)
             #start the intruder at a random location
             intruder.select_random_location()
             intruder.select_waypoint()
 
             for j in range(int(ROLLOUT_TIME_STEPS)):
-                print('j', j)
 
                 #move the intruder to a new square
                 prev_x = intruder.x
@@ -159,9 +157,6 @@ def policy_rollout(intruder_list):
                 #to the intruder's new position
                 delta_x = intruder.x-prev_x
                 delta_y = intruder.y-prev_y
-
-                print('delta_x', delta_x)
-                print('delta_y', delta_y)
 
                 #update simple and complex kernels
                 simple_kernel[midpoint+delta_x][midpoint+delta_y] += 1
@@ -202,7 +197,6 @@ def policy_rollout(intruder_list):
                     transition_matrix[i] = transition_matrix[i]/my_sum
             #intruder.transition_matrix = csr_matrix(transition_matrix)
             intruder.transition_matrix = transition_matrix
-
 
 def predict_intruder_location_optimized(priors, intruder, mode, w, x_offset=0, y_offset=0):
     new_priors = np.copy(priors)
@@ -245,7 +239,6 @@ def predict_intruder_location_optimized(priors, intruder, mode, w, x_offset=0, y
         #reshape back into 2D array
         #return np.reshape(new_priors_vector.toarray(), [xlim,ylim])
         return np.reshape(new_priors_vector, [xlim,ylim])
-
 
 def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0):
     new_priors = np.copy(priors)
@@ -298,9 +291,8 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
 
         return new_priors/(np.sum(new_priors)+1e-100)
 
-
 def update_priors(PRIORS, w, c, i):
-#If we spotted the intruder, update OBSERVATION with his location
+    #If we spotted the intruder, update OBSERVATION with his location
     #(We assume determinism: if he's in our range of vision, we spotted him.)
     if heardSomething(c, i):
         #determine the location at which the "sound" was heard

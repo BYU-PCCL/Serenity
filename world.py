@@ -62,7 +62,6 @@ class World:
 
         print('  Creating validity map...')
         self.validity_map = self.create_validity_map()
-        print('  self.terrain', self.terrain)
 
         print('  Storing contours...')
         self.contours = self.detect_contours()
@@ -71,7 +70,6 @@ class World:
         terrain = self.terrain.astype(np.uint8)
         terrain = cv2.erode(terrain, np.ones((2, 2)), iterations=1)
         terrain = cv2.dilate(terrain, np.ones((3, 3)), iterations=2)
-        print('np.mean(terrain)', np.mean(terrain))
         terrain = cv2.cvtColor(cv2.cvtColor(terrain, cv2.COLOR_GRAY2BGR), cv2.COLOR_BGR2GRAY)
         contours, hierarchy = cv2.findContours(terrain, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
