@@ -11,7 +11,7 @@ INTRUDER_TYPE = 1 #0 = momentum, 1 = waypoints
 
 class Intruder:
 
-    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=1, start_x=-1, start_y=-1, use_rrt=False):
+    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=1, start_x=-1, start_y=-1, use_rrt=True):
         print('Initializing intruder...')
         self.xdim = my_world.xdim
         self.ydim = my_world.ydim
