@@ -62,7 +62,6 @@ class flip_erp:
 
     @staticmethod
     def score( X, sz=(1,1), p=0.5 ):
-#        return np.sum( ss.bernoulli.logpmf( X, p ) )
         return np.sum( X * np.log(p) - (1.0-X)*np.log(1.0-p) )
 
     @staticmethod
@@ -215,39 +214,68 @@ class Q( object ):
             return new_val
         else:
             return new_val
+
+#
+# ------------------------------------------------------
+#
     
+    def opt_sgd( self, alpha=0.01, itercnt=100, rolloutcnt=10 ):
+        results = []
+        scores = []
+
+        for iter in range( 0, itercnt ):
+            score = Q.calc_rolled_out_gradient( cnt=rolloutcnt )
+            print "\n%d: %.2f" % ( iter, score )
+            results.append( np.copy( Q.var_db[ "gloc" ][ "p" ] ) )
+            scores.append( score )
+
+            for k in Q.grad_db:
+                for j in Q.grad_db[ k ]:
+                    print "[%s][%s]" % (k,j)
+                    print "  ", Q.var_db[ k ][ j ]
+                    print "  ", Q.grad_db[ k ][ j ]
+                    Q.var_db[ k ][ j ] -= SS * Q.grad_db[ k ][ j ]
+
+        return results, scores
+#
+# ------------------------------------------------------
+#
+
+    def opt_adam( self, alpha=0.01, beta_1=0.9, beta_2=0.999, epsilon=10e-8, itercnt=100, rolloutcnt=10 ):
+        results = []
+        scores = []
+
+        m_t = {}
+        v_t = {}
+        for k in Q.grad_db:
+            m_t[k] = {}
+            v_t[k] = {}
+            for j in Q.grad_db[ k ]:
+                m_t[k][j] = 0
+                v_t[k][j] = 0
+
+        for iter in range( 0, itercnt ):
+
+            score = Q.calc_rolled_out_gradient( cnt=10 )
+            print "\n%d: %.2f" % ( iter, score )
+
+            results.append( np.copy( Q.var_db[ "gloc" ][ "p" ] ) )
+            scores.append( score )
+
+            for k in Q.grad_db:
+                for j in Q.grad_db[ k ]:
+                    m_t[k][j] = beta_1 * m_t[k][j] + (1.0 - beta_1) * Q.grad_db[ k ][ j ]
+                    v_t[k][j] = beta_2 * v_t[k][j] + (1.0 - beta_2) * Q.grad_db[ k ][ j ]**2.0
+
+            for k in Q.grad_db:
+                for j in Q.grad_db[ k ]:
+                    m_hat_t = m_t[k][j] / (1.0 - beta_1**float(iter+1))
+                    v_hat_t = v_t[k][j] / (1.0 - beta_2**float(iter+1))
+            
+                    Q.var_db[ k ][ j ] -= alpha * m_hat_t / (v_hat_t**0.5 + epsilon)
+
+        return results, scores
+ 
 #
 # ==================================================================
 #
-
-#                self.cur_grad_db[ name+"_"+p ] = erp_class.var_grads[p]( new_val, **var_params )
-
-    # def mk_name( self, name ):
-    #     if name == None:
-    #         # someday, might replace this with auto-naming?
-    #         # check out the inspect module...
-    #         raise( Exception('All ERPs must have a name!') )
-    #     return name
-#            name = None
-#        name = self.mk_name( name )
-
-
-    # def make_erp( self, samp_func, score_func=None ):
-    #    return lambda *args, **kwargs: self.do_erp( samp_func, *args, **kwargs )
-
-    # def do_erp( self, samp_func, *args, **kwargs ):
-    #     if kwargs.has_key( 'name' ):
-    #         name = kwargs['name']
-    #     else:
-    #         name = None
-
-    #     if not self.always_sample:
-    #         name = self.mk_name( name )
-    #         if self.db.has_key( name ):
-    #             return self.db[ name ]
-
-    #     new_val = samp_func( *args )
-    #     self.db[ name ] = new_val
-
-    #     return new_val
-    
