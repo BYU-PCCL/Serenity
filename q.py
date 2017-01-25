@@ -224,17 +224,14 @@ class Q( object ):
         scores = []
 
         for iter in range( 0, itercnt ):
-            score = Q.calc_rolled_out_gradient( cnt=rolloutcnt )
+            score = self.calc_rolled_out_gradient( cnt=rolloutcnt )
             print "\n%d: %.2f" % ( iter, score )
-            results.append( np.copy( Q.var_db[ "gloc" ][ "p" ] ) )
+            results.append( np.copy( self.var_db[ "gloc" ][ "p" ] ) )
             scores.append( score )
 
-            for k in Q.grad_db:
-                for j in Q.grad_db[ k ]:
-                    print "[%s][%s]" % (k,j)
-                    print "  ", Q.var_db[ k ][ j ]
-                    print "  ", Q.grad_db[ k ][ j ]
-                    Q.var_db[ k ][ j ] -= SS * Q.grad_db[ k ][ j ]
+            for k in self.grad_db:
+                for j in self.grad_db[ k ]:
+                    self.var_db[ k ][ j ] -= alpha * self.grad_db[ k ][ j ]
 
         return results, scores
 #
@@ -247,32 +244,32 @@ class Q( object ):
 
         m_t = {}
         v_t = {}
-        for k in Q.grad_db:
+        for k in self.grad_db:
             m_t[k] = {}
             v_t[k] = {}
-            for j in Q.grad_db[ k ]:
+            for j in self.grad_db[ k ]:
                 m_t[k][j] = 0
                 v_t[k][j] = 0
 
         for iter in range( 0, itercnt ):
 
-            score = Q.calc_rolled_out_gradient( cnt=10 )
+            score = self.calc_rolled_out_gradient( cnt=rolloutcnt )
             print "\n%d: %.2f" % ( iter, score )
 
-            results.append( np.copy( Q.var_db[ "gloc" ][ "p" ] ) )
+            results.append( np.copy( self.var_db[ "gloc" ][ "p" ] ) )
             scores.append( score )
 
-            for k in Q.grad_db:
-                for j in Q.grad_db[ k ]:
-                    m_t[k][j] = beta_1 * m_t[k][j] + (1.0 - beta_1) * Q.grad_db[ k ][ j ]
-                    v_t[k][j] = beta_2 * v_t[k][j] + (1.0 - beta_2) * Q.grad_db[ k ][ j ]**2.0
+            for k in self.grad_db:
+                for j in self.grad_db[ k ]:
+                    m_t[k][j] = beta_1 * m_t[k][j] + (1.0 - beta_1) * self.grad_db[ k ][ j ]
+                    v_t[k][j] = beta_2 * v_t[k][j] + (1.0 - beta_2) * self.grad_db[ k ][ j ]**2.0
 
-            for k in Q.grad_db:
-                for j in Q.grad_db[ k ]:
+            for k in self.grad_db:
+                for j in self.grad_db[ k ]:
                     m_hat_t = m_t[k][j] / (1.0 - beta_1**float(iter+1))
                     v_hat_t = v_t[k][j] / (1.0 - beta_2**float(iter+1))
             
-                    Q.var_db[ k ][ j ] -= alpha * m_hat_t / (v_hat_t**0.5 + epsilon)
+                    self.var_db[ k ][ j ] -= alpha * m_hat_t / (v_hat_t**0.5 + epsilon)
 
         return results, scores
  
