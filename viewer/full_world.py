@@ -53,21 +53,27 @@ class Fullworld( object ):
 
         rrt_path = self.my_rrt( start_loc, goal_loc )
 
-        isIntruderFound = self.isovist.IsIntruderSeen( rrt_path,
-                                                  self.UAVLocation,
-                                                  self.UAVForwardVector,
-                                                  UAVFieldOfVision = 45 )
+        if rrt_path == []:
+            isIntruderFound = False
+        else:
+            rrt_pts = np.vstack( rrt_path )
+            dists = distance_to_other_points( a2d(self.UAVLocation), rrt_pts )
+            isIntruderFound = np.any( dists < 0.1 )
 
-        intersections = self.isovist.GetIsovistIntersections( self.UAVLocation, self.UAVForwardVector )
+#        isIntruderFound = self.isovist.IsIntruderSeen( rrt_path,
+#                                                  self.UAVLocation,
+#                                                  self.UAVForwardVector,
+#                                                  UAVFieldOfVision = 45 )
+#        intersections = self.isovist.GetIsovistIntersections( self.UAVLocation, self.UAVForwardVector )
 
         if isIntruderFound:
-            p = 0.9
+            p = 0.9999999
         else:
-            p = 0.1
+            p = 0.0000001
             
-#        Q.flip( p=p, name="data" )
+        Q.flip( p=p, name="data" )
 
-        return start_loc,goal_loc,isIntruderFound,rrt_path,intersections
+        return start_loc,goal_loc,isIntruderFound,rrt_path
 
 
 
