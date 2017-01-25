@@ -16,8 +16,9 @@ class Q( object ):
         self.model = model
         self.inject_q_objs = False
 
-        self.var_db = {}
-        self.cond_db = {}
+        self.var_type_db = {}
+        self.var_params_db = {}
+        self.cond_data_db = {}
 
         # this gets reset at each gradient iteration
         self.grad_db = {}
@@ -37,7 +38,7 @@ class Q( object ):
 #
 
     def condition( self, name=None, value=None ):
-        self.cond_db[ name ] = value
+        self.cond_data_db[ name ] = value
 
     def make_erp( self, erp_class ):
 
@@ -87,7 +88,7 @@ class Q( object ):
 # ------------------------------------------------------
 #
 
-    def calc_rolled_out_gradient( self, cnt=100 ):
+    def calc_rolled_out_gradient_nobaseline( self, cnt=100 ):
 
         total_score = 0.0
 
@@ -107,6 +108,43 @@ class Q( object ):
                     self.grad_db[ k ][ j ] /= cnt
 
         return total_score / float(cnt)
+
+#
+# ------------------------------------------------------
+#
+
+    def calc_rolled_out_gradient( self, cnt=100 ):
+
+        np.set_printoptions( precision=2, linewidth=200 )
+
+        scores = []
+
+        # normalize
+        for k in self.cur_grad_db:
+            for j in self.cur_grad_db[k]:
+                self.grad_db[ k ][ j ] = []
+
+        # perform cnt rollouts
+        for i in range(cnt):
+            self.run_model()
+            scores.append( self.cur_trace_score )
+            for k in self.cur_grad_db:
+                for j in self.cur_grad_db[k]:
+                    self.grad_db[ k ][ j ].append( self.cur_grad_db[ k ][ j ] )
+
+        # our baseline is just the mean
+        scores = np.atleast_2d( scores )
+        total_score = np.sum( scores )
+#        scores = scores - np.mean( scores )
+        scores = scores - np.median( scores )
+
+        # normalize
+        for k in self.cur_grad_db:
+            for j in self.cur_grad_db[k]:
+                tmp = self.grad_db[ k ][ j ]
+                self.grad_db[ k ][ j ] = np.dot( scores, np.vstack( tmp ) ) / cnt
+
+        return total_score / float(cnt)
 #
 # ------------------------------------------------------
 #
@@ -119,14 +157,16 @@ class Q( object ):
         else:
             raise(Exception('All ERPs must have a name!'))
 
-        if self.var_db.has_key( name ):
-            var_params = self.var_db[ name ]
+        self.var_type_db[ name ] = erp_class
+
+        if self.var_params_db.has_key( name ):
+            var_params = self.var_params_db[ name ]
         else:
             var_params = erp_class.new_var_params( *args, **kwargs )
-            self.var_db[ name ] = var_params
+            self.var_params_db[ name ] = var_params
 
-        if self.cond_db.has_key( name ):
-            new_val = self.cond_db[ name ]
+        if self.cond_data_db.has_key( name ):
+            new_val = self.cond_data_db[ name ]
             trace_score = erp_class.score( new_val, *args, **kwargs )
             my_score = -trace_score
 
@@ -163,12 +203,12 @@ class Q( object ):
         for iter in range( 0, itercnt ):
             score = self.calc_rolled_out_gradient( cnt=rolloutcnt )
             print "\n%d: %.2f" % ( iter, score )
-            results.append( np.copy( self.var_db[ "gloc" ][ "p" ] ) )
+            results.append( np.copy( self.var_params_db[ "gloc" ][ "p" ] ) )
             scores.append( score )
 
             for k in self.grad_db:
                 for j in self.grad_db[ k ]:
-                    self.var_db[ k ][ j ] -= alpha * self.grad_db[ k ][ j ]
+                    self.var_params_db[ k ][ j ] -= alpha * self.grad_db[ k ][ j ]
 
         return results, scores
 #
@@ -193,7 +233,7 @@ class Q( object ):
             score = self.calc_rolled_out_gradient( cnt=rolloutcnt )
             print "\n%d: %.2f" % ( iter, score )
 
-            results.append( np.copy( self.var_db[ "gloc" ][ "p" ] ) )
+            results.append( np.copy( self.var_params_db[ "gloc" ][ "p" ] ) )
             scores.append( score )
 
             for k in self.grad_db:
@@ -205,8 +245,13 @@ class Q( object ):
                 for j in self.grad_db[ k ]:
                     m_hat_t = m_t[k][j] / (1.0 - beta_1**float(iter+1))
                     v_hat_t = v_t[k][j] / (1.0 - beta_2**float(iter+1))
+
+                    new_val = self.var_params_db[ k ][ j ] - alpha * m_hat_t / (v_hat_t**0.5 + epsilon)
+
+                    erp_class = self.var_type_db[ k ]
+                    new_val = erp_class.project_param( j, new_val )
             
-                    self.var_db[ k ][ j ] -= alpha * m_hat_t / (v_hat_t**0.5 + epsilon)
+                    self.var_params_db[ k ][ j ] = new_val
 
         return results, scores
  
