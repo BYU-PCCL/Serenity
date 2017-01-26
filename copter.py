@@ -31,6 +31,8 @@ class Copter:
         self.hearing_square = pygame.Surface((self.hearing_range, self.hearing_range))
         self.hearing_square.set_alpha(70)
         self.hearing_square.fill((255, 255, 255)) #white
+	self.last_x = self.x
+	self.last_y = self.y
 
     def select_waypoint(self, priors=[]):
         #if no priors were passed in, 
@@ -74,6 +76,8 @@ class Copter:
         return waypoint
 
     def step(self, priors=[]):
+	self.last_x = self.x
+	self.last_y = self.y
         self.momentum_x += 1
         self.momentum_y += 1
         self.momentum_x = min(MAX_MOMENTUM, self.momentum_x)
@@ -97,6 +101,9 @@ class Copter:
         if self.waypoint[1] < self.y:
             self.y -= self.momentum_y
             self.orientation = 0
+
+    def movement_vector(self):
+	return (self.x-self.last_x,self.y-self.last_y)
 
     def get_points_in_hearing_range(self):
         return_val = [] 

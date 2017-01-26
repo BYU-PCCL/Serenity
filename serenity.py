@@ -12,10 +12,10 @@ import tensorflow as tf
 
 import world
 import copter
-import intruder
+import intruder2
 
 #HEADLESS
-#if you're telnetting from home from a non-linux
+#if you're telnetting from home from a non-linx
 #machine, set HEADLESS to True in order to view
 #error messages
 HEADLESS = False
@@ -27,14 +27,15 @@ WHITE    = ( 255, 255, 255)
 GREEN    = (   0, 255,   0)
 DRK_GREEN = (   0, 100,   0)
 RED      = ( 255,   0,   0)
+BROWN      = ( 150,   50,  50)
 BLUE     = (   0,   0, 255)
 GRAY     = (  50,  50,  50)
 DARK_GRY = (  15,  15,  15)
 LITE_GRY = ( 100, 100, 100)
 
 #GLOBAL CONSTANTS 
-MAX_MOMENTUM =10 
-INTRUDER_MOMENTUM = 4 #sum of momentum plus intruder's jitter must be less than KERNEL_SIZE/2
+MAX_MOMENTUM = 10 
+INTRUDER_MOMENTUM = 3 #sum of momentum plus intruder's jitter must be less than KERNEL_SIZE/2
 KERNEL_SIZE = 11 #must be an odd number 
 ICON_SIZE = 10
 
@@ -42,26 +43,30 @@ ICON_SIZE = 10
 #YDIM = 500
 #XDIM = 1400
 #YDIM = 1000
-XDIM=1000
-YDIM=1000
+XDIM=500
+YDIM=500
 
 MODE = 1                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
 OBSTACLES = 10                #number of obstacles on the world map
-INTRUDER_TYPE = 1        #0 = momentum, 1 = waypoints
+INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints
 MESSY_WORLD = True
 
 # ROLLOUT_EPOCHS = int(1e3)
 # ROLLOUT_TIME_STEPS = int(1e3)
-ROLLOUT_EPOCHS = 0
-ROLLOUT_TIME_STEPS = 0
+ROLLOUT_EPOCHS = 1000
+ROLLOUT_TIME_STEPS = 1000
 SHOW_INITIAL_PROBABILITY_MAP = False
 SHOW_SIMPLE_KERNEL = False
 SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
 PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
-SHOW_ISOVIST = False
 USE_VECTOR_MATRIX_MULTIPLY = False
-DOWNSAMPLE = 8                         #downsample factor for prior updates
+DOWNSAMPLE = 2                         #downsample factor for prior updates
+
+SHOW_ISOVIST =False
+SHOW_WORLD_TERRAIN = True
+SHOW_POLYGONS = False
+
 
 COLOR_SCALE = XDIM*YDIM*2.5
 KERNEL_COLOR_SCALE = 1200
@@ -142,13 +147,13 @@ def policy_rollout(intruder_list):
         geographic_probability_map = np.zeros([intruder.xdim,intruder.ydim], dtype=np.float32)
 
         for i in range(int(ROLLOUT_EPOCHS)):
-            print('i', i)
+            #print('i', i)
             #start the intruder at a random location
             intruder.select_random_location()
             intruder.select_waypoint()
 
             for j in range(int(ROLLOUT_TIME_STEPS)):
-                print('j', j)
+                #print('j', j)
 
                 #move the intruder to a new square
                 prev_x = intruder.x
@@ -160,8 +165,8 @@ def policy_rollout(intruder_list):
                 delta_x = intruder.x-prev_x
                 delta_y = intruder.y-prev_y
 
-                print('delta_x', delta_x)
-                print('delta_y', delta_y)
+                #print('delta_x', delta_x)
+                #print('delta_y', delta_y)
 
                 #update simple and complex kernels
                 simple_kernel[midpoint+delta_x][midpoint+delta_y] += 1
@@ -372,25 +377,32 @@ def paint_to_screen(PRIORS, w, c, i):
             img = pygame.surfarray.make_surface((i.geographic_probability_map*COLOR_SCALE).astype(int))
         screen.blit(img, img.get_rect())
         
-        #OBSTACLES AND WORLD TERRAIN
-        img = pygame.surfarray.make_surface((w.terrain*1000).astype(int))
-        img.set_alpha(70)
-        screen.blit(img, img.get_rect())
+        #WORLD TERRAIN
+	if SHOW_WORLD_TERRAIN == True:
+            img = pygame.surfarray.make_surface((w.terrain*1000).astype(int))
+            img.set_alpha(70)
+            screen.blit(img, img.get_rect())
         
+	#POLYGON_MAP
+	if SHOW_POLYGONS == True:
+	    for p in w.polygon_map:
+	        pygame.draw.polygon(screen, BROWN, p)
+
         #ISOVIST
         if SHOW_ISOVIST == True:
-            drone_isovist = w.isovist.FindIsovistForAgent(c.x,c.y)
-            for point in drone_isovist:
-                #print point
-                x = point[0]
-                y = point[1]
-                pygame.draw.rect(screen, DRK_GREEN, [x - ICON_SIZE/4, y - ICON_SIZE/4, ICON_SIZE/2, ICON_SIZE/2])
-            if len(drone_isovist) > 2:
-                #isovist_surface = pygame.Surface((XDIM,YDIM))
-                isovist_surface = pygame.surfarray.make_surface((PRIORS*COLOR_SCALE).astype(int))
-                isovist_surface.set_alpha(80)
-                pygame.draw.polygon(isovist_surface, WHITE, drone_isovist)
-                screen.blit(isovist_surface, isovist_surface.get_rect())
+             #drone_isovist = w.isovist.FindIsovistForAgent(c.x,c.y)
+             drone_isovist = w.isovist.GetIsovistIntersections((c.x,c.y), c.movement_vector(), 90)
+             for point in drone_isovist:
+                 #print point
+                 x = point[0]
+                 y = point[1]
+                 pygame.draw.rect(screen, DRK_GREEN, [x - ICON_SIZE/4, y - ICON_SIZE/4, ICON_SIZE/2, ICON_SIZE/2])
+             if len(drone_isovist) > 2:
+                 isovist_surface = pygame.Surface((XDIM,YDIM))
+                 isovist_surface = pygame.surfarray.make_surface((PRIORS*COLOR_SCALE).astype(int))
+                 isovist_surface.set_alpha(80)
+                 pygame.draw.polygon(isovist_surface, WHITE, drone_isovist)
+                 screen.blit(isovist_surface, isovist_surface.get_rect())
 
 
         #TREATS
@@ -446,11 +458,15 @@ print('Initializing world...')
 w = world.World(XDIM, YDIM, TREATS, OBSTACLES)
 
 print('Initializing intruder...')
-i = intruder.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+#i = intruder.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+#i = intruder.Trespasser(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+i = intruder2.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
 
 print('Rolling out policy...')
 policy_rollout([i])
 PRIORS = i.geographic_probability_map
+#PRIORS = np.ones([XDIM,YDIM])
+#PRIORS = PRIORS/np.sum(PRIORS)
 
 c = copter.Copter(w)
 

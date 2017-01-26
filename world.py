@@ -1,3 +1,4 @@
+import sys
 import math
 import random as rand
 import numpy as np
@@ -50,15 +51,18 @@ class World:
     def __init__(self, xdim, ydim, num_treats, num_obstacles, min_obst_dim=10, max_obst_dim=100):
         self.xdim = xdim
         self.ydim = ydim
-        #self.movement_bounds = [0,xdim-1,0,ydim-1]
+        self.movement_bounds = [0,xdim-1,0,ydim-1]
         #self.movement_bounds = [150,xdim-151,150,ydim-151]
-        self.movement_bounds = [int(0.3*xdim),int(0.82*xdim),int(0.28*ydim),int(0.8*ydim)]
-        #self.initialize_terrain(num_obstacles, min_obst_dim, max_obst_dim)
+        #self.movement_bounds = [int(0.3*xdim),int(0.82*xdim),int(0.28*ydim),int(0.8*ydim)]
+        self.polygon_segments = self.initialize_terrain(num_obstacles, min_obst_dim, max_obst_dim)
         #self.load_point_cloud('point_clouds/final_xyz.npy')
-        self.read_point_cloud_image('point_clouds/bremen_altstadt_final.png')
+        #self.read_point_cloud_image('point_clouds/bremen_altstadt_final.png')
         self.create_valid_squares()
         self.initialize_treats(num_treats)
-        self.isovist = isovist.Isovist(self.terrain)
+        #self.isovist = isovist.Isovist(self.terrain)
+	#self.polygon_map, self.polygon_segments = self.create_polygon_map()
+	#self.polygon_segments = self.create_polygon_map()
+        self.isovist = isovist.Isovist(self.polygon_segments)
 
         print('  Creating validity map...')
         self.validity_map = self.create_validity_map()
@@ -121,6 +125,7 @@ class World:
         #(later we'll use a point cloud)
         self.terrain = np.zeros([self.xdim, self.ydim])
         self.add_terrain_frame()
+	polygon_segments = []
         for i in range(num_obstacles):
             start_x = rand.randint(0,self.xdim-min_obst_dim)
             start_y = rand.randint(0,self.ydim-min_obst_dim)
@@ -131,7 +136,32 @@ class World:
             if end_y > self.ydim-1:
                 end_y = self.ydim
             self.terrain[start_x:end_x, start_y:end_y] = 1
+	    point1 = (start_x, start_y)
+	    point2 = (start_x, end_y)
+	    point3 = (end_x, end_y)
+	    point4 = (end_x, start_y)
+	    segments = [[point1, point2], [point3, point4]]
+	    polygon_segments.append(segments)
+	#print polygon_segments
+	#sys.exit()
+	return polygon_segments
 
+    def create_polygon_map(self):
+	return [[[(0, 0), (840, 0)], [(840, 0), (840, 360)], [(840, 360), (0, 360)], [(0, 360), (0, 0)]], [[(100, 150), (120, 50)], [(120, 50), (200, 80)], [(200, 80), (140, 210)], [(140, 210), (100, 150)]], [[(100, 200), (120, 250)], [(120, 250), (60, 300)], [(60, 300), (100, 200)]], [[(200, 260), (220, 150)], [(220, 150), (300, 200)], [(300, 200), (350, 320)], [(350, 320), (200, 260)]], [[(540, 60), (560, 40)], [(560, 40), (570, 70)], [(570, 70), (540, 60)]], [[(650, 190), (760, 170)], [(760, 170), (740, 270)], [(740, 270), (630, 290)], [(630, 290), (650, 190)]], [[(600, 95), (780, 50)], [(780, 50), (680, 150)], [(680, 150), (600, 95)]]]
+
+	"""polygons = []
+	polygon_segments = []
+
+	for x in open('point_clouds/building_polygons.txt'):
+	    polygon_points = np.fromstring(x, dtype=float, sep=' ')
+	    #polygon_points[:,1] = 1000-polygon_points[:,1] #flip on the y axis
+	    segment_list = []
+	    for i in range(len(polygon_points)-3):
+		segment_list.append([(polygon_points[i], polygon_points[i+1]), (polygon_points[i+2],polygon_points[i+3])])
+	    segment_list.append([(polygon_points[-2], polygon_points[-1]), (polygon_points[0], polygon_points[1])])
+	    polygon_segments.append(segment_list)
+	    polygons.append(polygon_points)
+	return polygons, polygon_segments"""
 
     def load_point_cloud(self, filename):
         print "LOADING POINT CLOUD..."
