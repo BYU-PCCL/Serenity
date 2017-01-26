@@ -24,7 +24,7 @@ class Copter:
         self.waypoint = (rand.randint(0, self.xdim), rand.randint(0,self.ydim))
         self.momentum_x = 1
         self.momentum_y = 1
-        self.hearing_range = 50  
+        self.hearing_range = 80  
         self.sight_range = 50
         self.orientation = 0
         #c.icon = ??? #we'll do this later
