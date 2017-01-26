@@ -1,3 +1,4 @@
+from __future__ import division
 import math
 from math import floor
 import random as rand
@@ -5,8 +6,7 @@ import random as rand
 import numpy as np
 import cv2
 
-from viewer.my_rrt import run_rrt
-
+from viewer.my_rrt import run_rrt_poly
 INTRUDER_TYPE = 1 #0 = momentum, 1 = waypoints
 
 class Intruder:
@@ -45,27 +45,31 @@ class Intruder:
         print('Generating RRT path...')
         current_location = np.atleast_2d([self.x, self.y])
 
-        rough_path = np.floor(run_rrt(
+        rough_path = np.floor(run_rrt_poly(
             current_location,
             np.atleast_2d(target),
             self.my_world.contours,
-            1000,
+            scale=1000,
             step_limit=30000))[1:]
 
         exact_path = [[self.x, self.y]]
 
+        print('self.MAX_SPEED', self.MAX_SPEED)
+
         for next_x, next_y in rough_path:
             current_x, current_y = exact_path[-1]
-            number_steps_between = floor(max(abs(next_x - current_x), abs(next_y - current_y)) / self.MAX_SPEED) 
+            number_steps_between = floor(max(abs(next_x - current_x), abs(next_y - current_y))) 
 
-            intermediate_xs = np.atleast_2d(np.floor(np.linspace(current_x, next_x, number_steps_between))).T
-            intermediate_ys = np.atleast_2d(np.floor(np.linspace(current_y, next_y, number_steps_between))).T
+            intermediate_xs = np.atleast_2d(np.floor(np.linspace(current_x, next_x, number_steps_between/self.MAX_SPEED))).T
+            intermediate_ys = np.atleast_2d(np.floor(np.linspace(current_y, next_y, number_steps_between/self.MAX_SPEED))).T
 
             intermediate_points = np.hstack([intermediate_xs, intermediate_ys])
 
+            print ''
+            print intermediate_points
+
             exact_path += [x for x in intermediate_points]
 
-        print('len(exact_path)', len(exact_path))
         return exact_path
 
     def random_location(self):
@@ -95,6 +99,9 @@ class Intruder:
             self.momentum_y = 0
 
     def select_waypoint(self):
+        print('Selecting waypoint...')
+
+        self.path_progress = 0
 
         if (self.target == "" or self.my_world.num_treats == 0) or \
            (self.MESSY_WORLD == True and rand.randint(0,1) == 0 ):
@@ -127,19 +134,25 @@ class Intruder:
     def waypoint_step(self):
         if abs(self.x - self.waypoint[0]) < 10 and abs(self.y - self.waypoint[1]) < 10:
            #pick a new waypoint 
-           self.path_progress = 0
            self.waypoint = self.select_waypoint()
            self.momentum_x = 1
            self.momentum_y = 1
 
+        print('self.path_progress', self.path_progress)
+        print('self.waypoint, self.x, self.y', self.waypoint, self.x, self.y)
+
         if self.use_rrt:
-            print('self.path_progress', self.path_progress)
+
+            if self.path_progress >= len(self.path):
+                self.select_waypoint()
+
             new_x = self.path[self.path_progress][0]
             new_y = self.path[self.path_progress][1]
             self.path_progress = self.path_progress + 1
 
             self.x = new_x
             self.y = new_y
+
         else:
             self.momentum_x += 1
             self.momentum_y += 1
@@ -199,5 +212,5 @@ class Intruder:
 
 class Trespasser(Intruder):
 
-    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=4, start_x=-1, start_y=-1):
+    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=1, start_x=-1, start_y=-1):
         Intruder.__init__(self, my_world, MESSY_WORLD, target, max_speed, start_x, start_y)

@@ -13,10 +13,56 @@ from PIL import Image
 
 from shaders import *
 from my_rrt import *
+from local import *
+
+import os,sys,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir) 
+import q
 
 RRT_LEN = 100
 RRT_CNT = 100
 
+# our approximation object
+Q = q.Q()
+Q.always_sample = True
+
+# ========================================================
+# ========================================================
+# ========================================================
+
+def S_mog_grid( Q, sz, name=None ):
+    w = Q.rand( sz[0], sz[1], name=name+'_w' )
+    w = w/np.sum( w )
+
+    inds = np.reshape( range(0,np.prod(sz)), sz )
+    mc = Q.choice( inds.ravel(), p=w.ravel(), name=name+'_mc' )
+
+    X,Y = np.meshgrid( range(0,sz[0]), range(0,sz[1]) )
+    Xc = float( X.ravel()[ mc ] ) / float( sz[0] )
+    Yc = float( Y.ravel()[ mc ] ) / float( sz[1] )
+
+    xv = 0.1*np.sqrt( 1.0/float(sz[0]) )
+    yv = 0.1*np.sqrt( 1.0/float(sz[1]) )
+
+    return np.atleast_2d( ( Xc + xv*Q.randn( name=name+'_gx' ),
+                            Yc + yv*Q.randn( name=name+'_gy' ) ) )
+
+def S_intruder_loc( Q ):
+    return S_mog_grid( Q, (20,20), name='iloc' )
+
+def S_goal_loc( Q ):
+    return S_mog_grid( Q, (20,20), name='gloc' )
+
+#lst = []
+#for i in range(2000):
+#    lst.append( S_mog_grid( Q, (20,20), "bob" ) )
+#data = np.vstack( lst )
+#plt.scatter( data[:,0], data[:,1] ); plt.show()
+
+# ========================================================
+# ========================================================
 # ========================================================
 
 def stdize( x ):
@@ -28,13 +74,16 @@ def make_gloo_indices( start, end ):
     return np.asarray( range(start,end), dtype=np.uint32 ).view( gloo.IndexBuffer )
 
 rrt_index = 0
-rx1,ry1,rx2,ry2 = polys_to_segs( load_polys( "./paths.txt" ) )
+rx1,ry1,rx2,ry2 = polygons_to_segments( load_polygons( "./paths.txt" ) )
 
 def sample_rrt( ):
-    global rrt_index, rx1,ry1,rx2,ry2
+    global Q, rrt_index, rx1,ry1,rx2,ry2
 
     start_pt = np.atleast_2d( [0.1,0.1] )
     goal_pt = np.atleast_2d( [0.9,0.9] )
+
+#    start_pt = S_intruder_loc( Q )
+#    goal_pt = S_goal_loc( Q )
 
     path = run_rrt( start_pt, goal_pt, rx1,ry1,rx2,ry2 )
 
@@ -64,10 +113,8 @@ def rrt_thread():
 # ========================================================
 
 print "Loading points..."
-#xyz = np.load( '/opt/wingated/nancy/final_xyz.npy' )
-xyz = np.load( '../point_clouds/final_xyz.npy' )
-#colors_1 = np.load( '/opt/wingated/nancy/final_ref.npy' )
-colors_1 = np.load( '../point_clouds/final_ref.npy' )
+xyz = np.load( MY_DATA_PATH + 'final_xyz.npy' )
+colors_1 = np.load( MY_DATA_PATH + 'final_ref.npy' )
 
 # or do all of this
 # normalize and clip out the interesting bits
@@ -141,11 +188,11 @@ bldgs['color'][...,3] = 0.2
 bldgs['transform'] = my_transform
 
 # the paths
-#paths = gloo.Program( quad_vertex, quad_fragment, count=RRT_CNT*RRT_LEN )
-paths = gloo.Program( paths_vertex, paths_fragment, count=RRT_CNT*RRT_LEN )
+paths = gloo.Program( quad_vertex, quad_fragment, count=RRT_CNT*RRT_LEN )
+#paths = gloo.Program( paths_vertex, paths_fragment, count=RRT_CNT*RRT_LEN )
 paths['position']  = np.zeros((RRT_CNT*RRT_LEN,3))
 paths['color'] = np.zeros(( RRT_CNT*RRT_LEN, 4 ))
-#paths['transform'] = my_transform
+paths['transform'] = my_transform
 
 paths_inds = []
 cnt = 0
@@ -166,9 +213,9 @@ should_draw_bldgs = True
 should_draw_heatmap = True
 
 #texture = np.ones((1000,1000,4),np.float32).view( gloo.TextureFloat2D )
-texture = np.zeros((1000,1000,4),np.float32).view( gloo.TextureFloat2D )
+#texture = np.zeros((1000,1000,4),np.float32).view( gloo.TextureFloat2D )
 #framebuffer = gloo.FrameBuffer( color=[texture], depth=gloo.DepthBuffer(1000,1000) )
-framebuffer = gloo.FrameBuffer( color=[texture] )
+#framebuffer = gloo.FrameBuffer( color=[texture] )
 
 @window.event
 def on_key_press( key, modifiers ):
@@ -208,16 +255,14 @@ def on_key_press( key, modifiers ):
 def on_draw(dt):
     window.clear()
 
-    framebuffer.activate()
-    gl.glViewport( 0, 0, 1000, 1000 )
-    for piset in paths_inds:
-        paths.draw( gl.GL_LINE_STRIP, indices = piset )
-    framebuffer.deactivate()
-
-    global cur_width, cur_height
-    gl.glViewport( 0, 0, cur_width, cur_height )
-
-    quad['u_texture'] = framebuffer.color[0]
+    # framebuffer.activate()
+    # gl.glViewport( 0, 0, 1000, 1000 )
+    # for piset in paths_inds:
+    #     paths.draw( gl.GL_LINE_STRIP, indices = piset )
+    # framebuffer.deactivate()
+#    global cur_width, cur_height
+#    gl.glViewport( 0, 0, cur_width, cur_height )
+#    quad['u_texture'] = framebuffer.color[0]
 
     # this is the heatmap
     if should_draw_heatmap:
@@ -233,9 +278,9 @@ def on_draw(dt):
         pnt_cloud.draw( gl.GL_POINTS )
 
     # these are the RRT paths
-#    if should_draw_rrt:
-#        for piset in paths_inds:
-#            paths.draw( gl.GL_LINE_STRIP, indices = piset )
+    if should_draw_rrt:
+        for piset in paths_inds:
+            paths.draw( gl.GL_LINE_STRIP, indices = piset )
 
 cur_width = 800
 cur_height = 800
@@ -247,7 +292,7 @@ def on_resize(width,height):
     pnt_cloud['projection'] = glm.perspective( 45.0, width / float(height), 1.0, 1000.0 )
     quad['projection'] = glm.perspective( 45.0, width / float(height), 1.0, 1000.0 )
     bldgs['projection'] = glm.perspective( 45.0, width / float(height), 1.0, 1000.0 )
-#    paths['projection'] = glm.perspective( 45.0, width / float(height), 1.0, 1000.0 )
+    paths['projection'] = glm.perspective( 45.0, width / float(height), 1.0, 1000.0 )
 
 @window.timer(1/60.)
 def timer(fps):

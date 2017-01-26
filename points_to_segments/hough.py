@@ -32,7 +32,6 @@ class Hough:
 			# y1 = int(y0 + 1000*(a))
 			# x2 = int(x0 - 1000*(-b))
 			# y2 = int(y0 - 1000*(a))
-
 			segments.append([(x1, y1), (x2, y2)])
 
 		return self.FormatForPolygonConversion(segments)
@@ -60,7 +59,6 @@ def main():
 	# h.DrawSegments(segments)
 
 	print('segments', segments)
-
 
 if __name__ == '__main__':
     main()

@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 
 STEP_SIZE = .01
@@ -29,6 +28,18 @@ def line_intersect( X1,Y1,X2,Y2, X3,Y3,X4,Y4 ):
 
     return INT_X, INT_Y, did_intersect
 
+
+#
+# loads a set of polygons
+#
+# note that this appends the first point to also be the last point.
+# this function assumes that the list is given in "open" form; by
+# appending the first point as the last point, it ensures that the
+# resulting polygon is exactly closed.
+#
+# note that this prepends a single point that is the mean of all the other points.
+# this is for drawing the polygons using a GL_TRIANGLE_FAN.  It's a total hack.
+#
 def load_polygons( fn="./paths.txt" ):
     bdata = []
     for x in open( fn ):
@@ -41,10 +52,10 @@ def load_polygons( fn="./paths.txt" ):
 
 # polygon_list is a list of np arrays
 # each nparray is a kx2 matrix, representing x,y points
-# first entry is the mean of all the points
+# first entry is the mean of all the points, which is SKIPPED
 # last entry in the matrix is the same as the first
 # returns x1,y1, x2,y2
-def polgons_to_segments( polygon_list ):
+def polygons_to_segments( polygon_list ):
     X1 = []
     Y1 = []
     X2 = []
@@ -65,7 +76,7 @@ def distance_to_other_points( pt, pts ):
     diffs = (pts - pt)**2.0
     return np.sum( diffs, axis=1, keepdims=True )
 
-def run_rrt( start_pt, goal_pt, polygons, scale, bias=0.75, plot=False, step_limit=2000):
+def run_rrt_poly( start_pt, goal_pt, polygons, bias=0.75, plot=False, step_limit=20000, scale=1):
     '''
     start_pt: 1 x 2 np array
     goal_pt: 1 x 2 np array
@@ -74,8 +85,10 @@ def run_rrt( start_pt, goal_pt, polygons, scale, bias=0.75, plot=False, step_lim
 
     returns a list of length 2 np arrays describing the path from `start_pt` to `goal_pt`
     '''
-    endpoint_a_x, endpoint_a_y, endpoint_b_x, endpoint_b_y = polgons_to_segments( polygons )
+    x1, y1, x2, y2 = polygons_to_segments( polygons )
+    return run_rrt( start_pt, goal_pt, x1, y1, x2, y2, bias, plot, scale=scale )
 
+def run_rrt( start_pt, goal_pt, endpoint_a_x, endpoint_a_y, endpoint_b_x, endpoint_b_y,  bias=0.75, plot=False, step_limit=20000, scale=1 ):
     nodes = start_pt
     parents = np.atleast_2d( [0] )
 
@@ -150,7 +163,7 @@ if __name__ == '__main__':
     start_pt = np.atleast_2d( [0.1,0.1] )
     goal_pt = np.atleast_2d( [0.9,0.9] )
 
-    path = run_rrt( start_pt, goal_pt, polygons, 1, plot=False)
+    path = run_rrt_poly( start_pt, goal_pt, polygons, plot=True)
 
 mypath = [0.88326248,  0.88557536,
 0.90324988,  0.8397441 ,

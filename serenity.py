@@ -53,8 +53,8 @@ MESSY_WORLD = True
 
 ROLLOUT_EPOCHS = int(1e3)
 ROLLOUT_TIME_STEPS = int(1e3)
-# ROLLOUT_EPOCHS = 0
-# ROLLOUT_TIME_STEPS = 0
+ROLLOUT_EPOCHS = 0
+ROLLOUT_TIME_STEPS = 0
 SHOW_INITIAL_PROBABILITY_MAP = False
 SHOW_SIMPLE_KERNEL = False
 SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
@@ -159,8 +159,11 @@ def policy_rollout(intruder_list):
                 delta_y = intruder.y-prev_y
 
                 #update simple and complex kernels
-                simple_kernel[midpoint+delta_x][midpoint+delta_y] += 1
-                kernel[prev_x][prev_y][midpoint + delta_x][midpoint+delta_y] += 1
+                try:
+                    simple_kernel[midpoint+delta_x][midpoint+delta_y] += 1
+                    kernel[prev_x][prev_y][midpoint + delta_x][midpoint+delta_y] += 1
+                except IndexError:
+                    print('Intruder stepped too far.')
                 #update overall probability map
                 geographic_probability_map[intruder.x][intruder.y] += 1
 
@@ -370,19 +373,19 @@ def paint_to_screen(PRIORS, w, c, i):
         screen.blit(img, img.get_rect())
         
         #ISOVIST
-        if SHOW_ISOVIST == True:
-            drone_isovist = w.isovist.FindIsovistForAgent(c.x,c.y)
-            for point in drone_isovist:
-                #print point
-                x = point[0]
-                y = point[1]
-                pygame.draw.rect(screen, DRK_GREEN, [x - ICON_SIZE/4, y - ICON_SIZE/4, ICON_SIZE/2, ICON_SIZE/2])
-            if len(drone_isovist) > 2:
-                #isovist_surface = pygame.Surface((XDIM,YDIM))
-                isovist_surface = pygame.surfarray.make_surface((PRIORS*COLOR_SCALE).astype(int))
-                isovist_surface.set_alpha(80)
-                pygame.draw.polygon(isovist_surface, WHITE, drone_isovist)
-                screen.blit(isovist_surface, isovist_surface.get_rect())
+        # if SHOW_ISOVIST == True:
+        #     drone_isovist = w.isovist.FindIsovistForAgent(c.x,c.y)
+        #     for point in drone_isovist:
+        #         #print point
+        #         x = point[0]
+        #         y = point[1]
+        #         pygame.draw.rect(screen, DRK_GREEN, [x - ICON_SIZE/4, y - ICON_SIZE/4, ICON_SIZE/2, ICON_SIZE/2])
+        #     if len(drone_isovist) > 2:
+        #         #isovist_surface = pygame.Surface((XDIM,YDIM))
+        #         isovist_surface = pygame.surfarray.make_surface((PRIORS*COLOR_SCALE).astype(int))
+        #         isovist_surface.set_alpha(80)
+        #         pygame.draw.polygon(isovist_surface, WHITE, drone_isovist)
+        #         screen.blit(isovist_surface, isovist_surface.get_rect())
 
 
         #TREATS
