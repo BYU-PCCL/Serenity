@@ -136,10 +136,10 @@ class World:
             if end_y > self.ydim-1:
                 end_y = self.ydim
             self.terrain[start_x:end_x, start_y:end_y] = 1
-	    point1 = (start_x, start_y)
-	    point2 = (start_x, end_y)
-	    point3 = (end_x, end_y)
-	    point4 = (end_x, start_y)
+	    point1 = (end_x, start_y)
+	    point2 = (end_x, end_y)
+	    point3 = (start_x, end_y)
+	    point4 = (start_x, start_y)
 	    segments = [[point1, point2], [point3, point4]]
 	    polygon_segments.append(segments)
 	#print polygon_segments

@@ -46,7 +46,7 @@ ICON_SIZE = 10
 XDIM=500
 YDIM=500
 
-MODE = 1                 #0 = simple kernel, 1 = complex kernel
+MODE = 0                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
 OBSTACLES = 10                #number of obstacles on the world map
 INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints
@@ -63,7 +63,7 @@ PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
 USE_VECTOR_MATRIX_MULTIPLY = False
 DOWNSAMPLE = 2                         #downsample factor for prior updates
 
-SHOW_ISOVIST =False
+SHOW_ISOVIST = True
 SHOW_WORLD_TERRAIN = True
 SHOW_POLYGONS = False
 SHOW_COPTER_PATH = True
@@ -520,8 +520,17 @@ while done != True:
     else:
         PRIORS[x1:x2,y1:y2] = predict_intruder_location(PRIORS[x1:x2,y1:y2], i, MODE, w, x1, y1)    
 
+    #suppress probabilities in regions
+    #containing obstacles
+    if MODE == 0: #simple kernel
+	#for x in range(x1, x2):
+	#    for y in range(y1, y2):
+	#        PRIORS[x][y] *= w.is_valid(x,y)	
+	PRIORS[x1:x2,y1:y2] = PRIORS[x1:x2,y1:y2]*w.validity_map.T[x1:x2,y1:y2]
+
     #renormalize priors after update
     PRIORS = PRIORS/(np.sum(PRIORS)+1e-100)
+
 
     paint_to_screen(PRIORS, w, c, i) #display the current world state and sprite locations
      

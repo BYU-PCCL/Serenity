@@ -92,19 +92,57 @@ class Copter:
 	    self.RRT_path = self.RRT_path[1:]
 
     def generate_path(self, priors):
-	#for now, just pick random points
 	NUM_WAYPOINTS = 3
+	
 	path = [(self.x, self.y)]
-	for i in range(NUM_WAYPOINTS):
-	    path.append((rand.randint(0, self.xdim), rand.randint(0,self.ydim)))
+
+	#for now, just pick random points
+#	for i in range(NUM_WAYPOINTS):
+#	    path.append((rand.randint(0, self.xdim), rand.randint(0,self.ydim)))
 
 
-	#for later:
-	#scan immediate vicinity
-	#order region according to probability
+	#for even later: select a region to search
+	#then search within that region...
+
+        if priors == []:
+	    print "No probabilities available. Could not plan copter path."
+            return path
+
+        SEARCH_RADIUS = 49 #was 100...
+        SEARCH_STEP_SIZE = 15 
+	NUM_SEARCH_REGIONS = 10
+
+	#scan immediate vicinity...
+	start_x = max(self.my_world.movement_bounds[0], self.x - NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
+	start_y = max(self.my_world.movement_bounds[2], self.y - NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
+	stop_x = min(self.my_world.movement_bounds[1], self.x + NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
+	stop_y = min(self.my_world.movement_bounds[3], self.y + NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
+
+	threshhold = np.mean(priors)
+	probs = []
+	locs = []
+	#print "search boundaries are %i, %i, %i, %i" % (start_x, start_y, stop_x, stop_y)
+        for x in range(start_x, stop_x-SEARCH_RADIUS, SEARCH_STEP_SIZE):
+	    #print "x is %i" % (x)
+            for y in range(start_y, stop_y - SEARCH_RADIUS, SEARCH_STEP_SIZE):
+		#print "y is %i" % (y)
+                boundary = [x, x+SEARCH_RADIUS, y, y+SEARCH_RADIUS]
+                prob = np.mean(priors[boundary[0]:boundary[1], boundary[2]:boundary[3]])
+                if prob > threshhold:
+		    #print "prob of %f exceeds threshhold of %f" % (prob, threshhold)
+                    probs.append(prob)
+                    locs.append( (x + SEARCH_RADIUS/2, y + SEARCH_RADIUS/2) )
+
+	#take the top one
+	if len(probs) > 0:
+	    i = probs.index(max(probs))
+	    path.append(locs[i])
+
+	#order found regions according to probability
 	#select the first n
 	#order those n such that the path is minimized
-
+	#print "path is:"
+	#print path
 	return path
 
     def move_toward_point(self, point):
