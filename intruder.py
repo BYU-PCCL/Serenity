@@ -54,8 +54,6 @@ class Intruder:
 
         exact_path = [[self.x, self.y]]
 
-        print('self.MAX_SPEED', self.MAX_SPEED)
-
         for next_x, next_y in rough_path:
             current_x, current_y = exact_path[-1]
             number_steps_between = floor(max(abs(next_x - current_x), abs(next_y - current_y))) 
@@ -64,9 +62,6 @@ class Intruder:
             intermediate_ys = np.atleast_2d(np.floor(np.linspace(current_y, next_y, number_steps_between/self.MAX_SPEED))).T
 
             intermediate_points = np.hstack([intermediate_xs, intermediate_ys])
-
-            print ''
-            print intermediate_points
 
             exact_path += [x for x in intermediate_points]
 
