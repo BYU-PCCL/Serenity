@@ -1,18 +1,22 @@
 import math
+from math import floor
 import numpy as np
 import random as rand
 import pygame
 
 import world
 
+from viewer.my_rrt import run_rrt
+
 MAX_MOMENTUM = 5
 MARGIN = 0.001
 
 class Copter:
 
-    def __init__(self, my_world, start_x=-1, start_y=-1):
+    def __init__(self, my_world, priors=[], start_x=-1, start_y=-1):
         self.xdim = my_world.xdim
         self.ydim = my_world.ydim
+	self.my_world = my_world
         if start_x == -1:
            self.x = rand.randint(my_world.movement_bounds[0], my_world.movement_bounds[1])
         else:
@@ -21,7 +25,10 @@ class Copter:
            self.y = rand.randint(my_world.movement_bounds[2], my_world.movement_bounds[3])
         else:
            self.y = start_y
-        self.waypoint = (rand.randint(0, self.xdim), rand.randint(0,self.ydim))
+        #self.waypoint = (rand.randint(0, self.xdim), rand.randint(0,self.ydim))
+	#self.RRT_path = self.generate_path_to_point(self.waypoint)
+	self.path = self.generate_path(priors)
+	self.path_waypoint = self.path[0]
         self.momentum_x = 1
         self.momentum_y = 1
         self.hearing_range = 80  
@@ -75,7 +82,69 @@ class Copter:
         # print "NEW WAYPOINT SELECTED: " + str(waypoint)
         return waypoint
 
+    def RRT_step(self, priors=[]):
+	if len(self.RRT_path) == 0:
+	    self.waypoint = self.select_waypoint(priors)
+	    self.RRT_path = self.generate_path_to_point(self.waypoint)
+	else:
+	    self.x = self.RRT_path[0][0]
+	    self.y = self.RRT_path[0][1]
+	    self.RRT_path = self.RRT_path[1:]
+
+    def generate_path(self, priors):
+	#for now, just pick random points
+	NUM_WAYPOINTS = 3
+	path = [(self.x, self.y)]
+	for i in range(NUM_WAYPOINTS):
+	    path.append((rand.randint(0, self.xdim), rand.randint(0,self.ydim)))
+
+
+	#for later:
+	#scan immediate vicinity
+	#order region according to probability
+	#select the first n
+	#order those n such that the path is minimized
+
+	return path
+
+    def move_toward_point(self, point):
+	self.last_x = self.x
+	self.last_y = self.y
+
+	delta_x = point[0] - self.x
+	delta_y = point[1] - self.y
+	distance = math.sqrt(delta_x*delta_x + delta_y*delta_y)
+	num_steps = distance/MAX_MOMENTUM
+	x_amt = delta_x/num_steps
+	y_amt = delta_y/num_steps
+
+	self.x += x_amt
+	self.y += y_amt
+
+        if abs(self.x - point[0]) < MAX_MOMENTUM and abs(self.y - point[1]) < MAX_MOMENTUM:
+	    self.x = point[0]
+	    self.y = point[1]
+
+
+    def path_step(self, priors):
+	if (self.x, self.y) == self.path_waypoint:
+	    if len(self.path) > 1:
+		self.path = self.path[1:]
+		self.path_waypoint = self.path[0]
+	    else:
+		self.path = self.generate_path(priors)
+		self.path_waypoint = self.path[0]
+	else:
+	   self.move_toward_point(self.path_waypoint)
+
+	
+
     def step(self, priors=[]):
+	#self.waypoint_step()
+	#self.RRT_step(priors)
+	self.path_step(priors)
+
+    def waypoint_step(self, priors=[]):
 	self.last_x = self.x
 	self.last_y = self.y
         self.momentum_x += 1
@@ -143,3 +212,35 @@ class Copter:
             boundaries.append([max(0, self.x-self.sight_range), max(0, self.y-self.sight_range)])
             boundaries.append([max(0, self.x-self.sight_range), min(self.ydim, self.y + self.sight_range)])
         return boundaries
+
+    def generate_path_to_point(self, target):
+
+        print('Generating RRT path...')
+        current_location = np.atleast_2d([self.x, self.y])
+
+        rough_path = np.floor(run_rrt(
+            current_location,
+            np.atleast_2d(target),
+            self.my_world.contours,
+            1000,
+            step_limit=30000))[1:]
+
+        exact_path = [[self.x, self.y]]
+
+        for next_x, next_y in rough_path:
+            current_x, current_y = exact_path[-1]
+            number_steps_between = floor(max(abs(next_x - current_x), abs(next_y - current_y)) / MAX_MOMENTUM)
+
+            intermediate_xs = np.atleast_2d(np.floor(np.linspace(current_x, next_x, number_steps_between))).T
+            intermediate_ys = np.atleast_2d(np.floor(np.linspace(current_y, next_y, number_steps_between))).T
+
+            intermediate_points = np.hstack([intermediate_xs, intermediate_ys])
+
+            exact_path += [x.astype(int) for x in intermediate_points]
+
+	print self.waypoint
+	print exact_path
+        print('len(exact_path)', len(exact_path))
+        return exact_path
+
+

@@ -66,6 +66,7 @@ DOWNSAMPLE = 2                         #downsample factor for prior updates
 SHOW_ISOVIST =False
 SHOW_WORLD_TERRAIN = True
 SHOW_POLYGONS = False
+SHOW_COPTER_PATH = True
 
 
 COLOR_SCALE = XDIM*YDIM*2.5
@@ -388,6 +389,11 @@ def paint_to_screen(PRIORS, w, c, i):
 	    for p in w.polygon_map:
 	        pygame.draw.polygon(screen, BROWN, p)
 
+	#COPTER PATH
+	if SHOW_COPTER_PATH == True:
+ 	    if len(c.path) > 0:
+		pygame.draw.lines(screen, WHITE, False, [(c.x,c.y)] + c.path)
+
         #ISOVIST
         if SHOW_ISOVIST == True:
              #drone_isovist = w.isovist.FindIsovistForAgent(c.x,c.y)
@@ -468,7 +474,7 @@ PRIORS = i.geographic_probability_map
 #PRIORS = np.ones([XDIM,YDIM])
 #PRIORS = PRIORS/np.sum(PRIORS)
 
-c = copter.Copter(w)
+c = copter.Copter(w, PRIORS)
 
 
 if HEADLESS != True:
