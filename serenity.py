@@ -52,16 +52,17 @@ OBSTACLES = 10                #number of obstacles on the world map
 INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints
 MESSY_WORLD = True
 
-UNIFORM_PRIOR = True
+UNIFORM_PRIOR = False		#if true, movement kernels will not be built
 ROLLOUT_EPOCHS = 1000
 ROLLOUT_TIME_STEPS = 1000
-SHOW_INITIAL_PROBABILITY_MAP = False
-SHOW_SIMPLE_KERNEL = False
-SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
 PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
 USE_VECTOR_MATRIX_MULTIPLY = False
 DOWNSAMPLE = 2                         #downsample factor for prior updates
 
+SHOW_SIMPLE_KERNEL = False
+SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
+
+SHOW_INITIAL_PROBABILITY_MAP = False
 SHOW_ISOVIST = True
 SHOW_WORLD_TERRAIN = True
 SHOW_POLYGONS = False

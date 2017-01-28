@@ -27,7 +27,7 @@ class Copter:
            self.y = start_y
         #self.waypoint = (rand.randint(0, self.xdim), rand.randint(0,self.ydim))
 	#self.RRT_path = self.generate_path_to_point(self.waypoint)
-	self.path = self.generate_path(priors)
+	self.path = self.generate_path(priors, self.x, self.y)
 	self.path_waypoint = self.path[0]
         self.momentum_x = 1
         self.momentum_y = 1
@@ -91,58 +91,76 @@ class Copter:
 	    self.y = self.RRT_path[0][1]
 	    self.RRT_path = self.RRT_path[1:]
 
-    def generate_path(self, priors):
+    def choose_search_region(self, priors):
+	#find the region of the map that contains the most
+	#proability mass, and return its midpoint
+
+	SEARCH_RADIUS = 100
+	SEARCH_STEP_SIZE = 50
+
+	start_x = self.my_world.movement_bounds[0]
+	start_y = self.my_world.movement_bounds[2]
+	stop_x = self.my_world.movement_bounds[1]
+	stop_y = self.my_world.movement_bounds[3]
+	
+	max_prob = -1
+	max_boundary = None
+        for x in range(start_x, stop_x-SEARCH_RADIUS, SEARCH_STEP_SIZE):
+            for y in range(start_y, stop_y - SEARCH_RADIUS, SEARCH_STEP_SIZE):
+                boundary = [x, x+SEARCH_RADIUS, y, y+SEARCH_RADIUS]
+                prob = np.sum(priors[boundary[0]:boundary[1], boundary[2]:boundary[3]])
+                if prob > max_prob:
+		    max_prob = prob
+		    max_boundary = boundary
+
+	point = ((max_boundary[0] + max_boundary[1])/2, (max_boundary[2]+max_boundary[3])/2)
+	return point
+
+    def generate_path(self, priors, x_loc, y_loc):
 	NUM_WAYPOINTS = 3
 	
-	path = [(self.x, self.y)]
-
-	#for now, just pick random points
-#	for i in range(NUM_WAYPOINTS):
-#	    path.append((rand.randint(0, self.xdim), rand.randint(0,self.ydim)))
-
-
-	#for even later: select a region to search
-	#then search within that region...
+	path = [(self.x, self.y)] #begin path at current location
 
         if priors == []:
 	    print "No probabilities available. Could not plan copter path."
             return path
+	elif np.sum(priors) == 0:
+	    print "priors are 0. Could not plan copter path."
+	    return path
 
-        SEARCH_RADIUS = 49 #was 100...
+        SEARCH_RADIUS = 50 
         SEARCH_STEP_SIZE = 15 
 	NUM_SEARCH_REGIONS = 10
 
 	#scan immediate vicinity...
-	start_x = max(self.my_world.movement_bounds[0], self.x - NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
-	start_y = max(self.my_world.movement_bounds[2], self.y - NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
-	stop_x = min(self.my_world.movement_bounds[1], self.x + NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
-	stop_y = min(self.my_world.movement_bounds[3], self.y + NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
+	start_x = max(self.my_world.movement_bounds[0], x_loc - NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
+	start_y = max(self.my_world.movement_bounds[2], y_loc - NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
+	stop_x = min(self.my_world.movement_bounds[1], x_loc + NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
+	stop_y = min(self.my_world.movement_bounds[3], y_loc + NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
 
 	threshhold = np.mean(priors)
 	probs = []
 	locs = []
-	#print "search boundaries are %i, %i, %i, %i" % (start_x, start_y, stop_x, stop_y)
         for x in range(start_x, stop_x-SEARCH_RADIUS, SEARCH_STEP_SIZE):
-	    #print "x is %i" % (x)
             for y in range(start_y, stop_y - SEARCH_RADIUS, SEARCH_STEP_SIZE):
-		#print "y is %i" % (y)
                 boundary = [x, x+SEARCH_RADIUS, y, y+SEARCH_RADIUS]
                 prob = np.mean(priors[boundary[0]:boundary[1], boundary[2]:boundary[3]])
                 if prob > threshhold:
-		    #print "prob of %f exceeds threshhold of %f" % (prob, threshhold)
                     probs.append(prob)
                     locs.append( (x + SEARCH_RADIUS/2, y + SEARCH_RADIUS/2) )
 
-	#take the top one
+	#select the local region with the 
+	#highest probability
 	if len(probs) > 0:
 	    i = probs.index(max(probs))
 	    path.append(locs[i])
+	else:
+	    #if we can't find any local regions that 
+	    #exceed threshold, then we'll switch to a
+	    #different area of the map
+	    point = self.choose_search_region(priors)
+	    path = self.generate_path(priors, point[0], point[1])
 
-	#order found regions according to probability
-	#select the first n
-	#order those n such that the path is minimized
-	#print "path is:"
-	#print path
 	return path
 
     def move_toward_point(self, point):
@@ -170,7 +188,7 @@ class Copter:
 		self.path = self.path[1:]
 		self.path_waypoint = self.path[0]
 	    else:
-		self.path = self.generate_path(priors)
+		self.path = self.generate_path(priors, self.x, self.y)
 		self.path_waypoint = self.path[0]
 	else:
 	   self.move_toward_point(self.path_waypoint)
