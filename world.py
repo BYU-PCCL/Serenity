@@ -69,7 +69,7 @@ class World:
         print('  self.terrain', self.terrain)
 
         print('  Storing contours...')
-        self.contours = self.detect_contours()
+        #self.contours = self.detect_contours()
 
     def detect_contours(self):
         terrain = self.terrain.astype(np.uint8)
