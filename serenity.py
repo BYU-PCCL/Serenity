@@ -52,8 +52,7 @@ OBSTACLES = 10                #number of obstacles on the world map
 INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints
 MESSY_WORLD = True
 
-# ROLLOUT_EPOCHS = int(1e3)
-# ROLLOUT_TIME_STEPS = int(1e3)
+UNIFORM_PRIOR = True
 ROLLOUT_EPOCHS = 1000
 ROLLOUT_TIME_STEPS = 1000
 SHOW_INITIAL_PROBABILITY_MAP = False
@@ -123,8 +122,7 @@ def policy_rollout(intruder_list):
     print "BEGINNING POLICY ROLLOUT..."
 
     for intruder in intruder_list:
- 
-        #establish a base kernel that will model the intruder behavior
+         #establish a base kernel that will model the intruder behavior
         simple_kernel = np.zeros([KERNEL_SIZE,KERNEL_SIZE], dtype=np.float32) 
         
         #also create a complex kernel construct: a separate
@@ -132,54 +130,56 @@ def policy_rollout(intruder_list):
         kernel = np.zeros([intruder.xdim, intruder.ydim, KERNEL_SIZE,KERNEL_SIZE], dtype=np.float32)
         midpoint = KERNEL_SIZE/2
 
-        #TRANSITION MATRIX
-        #represents the probability of transferring from any given
-        #state (x,y location) to any other state
-        if USE_VECTOR_MATRIX_MULTIPLY == True:
-            x_offset = intruder.my_world.movement_bounds[0]
-            y_offset = intruder.my_world.movement_bounds[2]
-            xdim = intruder.my_world.movement_bounds[1] - intruder.my_world.movement_bounds[0] + 1
-            ydim = intruder.my_world.movement_bounds[3] - intruder.my_world.movement_bounds[2] + 1
-            #transition_matrix = lil_matrix(np.zeros([xdim*ydim/DOWNSAMPLE, xdim*ydim/DOWNSAMPLE], dtype=np.float32))
-            transition_matrix = np.zeros([xdim*ydim/DOWNSAMPLE, xdim*ydim/DOWNSAMPLE], dtype=np.float32)
+        if UNIFORM_PRIOR == True:
+            geographic_probability_map = np.ones([intruder.xdim,intruder.ydim], dtype=np.float32)
+        else:
 
-        #this represents the overall probability of the intruder 
-        #being at any given x,y coordinate
-        geographic_probability_map = np.zeros([intruder.xdim,intruder.ydim], dtype=np.float32)
+            #TRANSITION MATRIX
+            #represents the probability of transferring from any given
+            #state (x,y location) to any other state
+            if USE_VECTOR_MATRIX_MULTIPLY == True:
+                x_offset = intruder.my_world.movement_bounds[0]
+                y_offset = intruder.my_world.movement_bounds[2]
+                xdim = intruder.my_world.movement_bounds[1] - intruder.my_world.movement_bounds[0] + 1
+                ydim = intruder.my_world.movement_bounds[3] - intruder.my_world.movement_bounds[2] + 1
+                #transition_matrix = lil_matrix(np.zeros([xdim*ydim/DOWNSAMPLE, xdim*ydim/DOWNSAMPLE], dtype=np.float32))
+                transition_matrix = np.zeros([xdim*ydim/DOWNSAMPLE, xdim*ydim/DOWNSAMPLE], dtype=np.float32)
 
-        for i in range(int(ROLLOUT_EPOCHS)):
-            #print('i', i)
-            #start the intruder at a random location
-            intruder.select_random_location()
-            intruder.select_waypoint()
+            #this represents the overall probability of the intruder 
+            #being at any given x,y coordinate
+            geographic_probability_map = np.zeros([intruder.xdim,intruder.ydim], dtype=np.float32)
 
-            for j in range(int(ROLLOUT_TIME_STEPS)):
-                #print('j', j)
+            for i in range(int(ROLLOUT_EPOCHS)):
+                #start the intruder at a random location
+                intruder.select_random_location()
+                intruder.select_waypoint()
 
-                #move the intruder to a new square
-                prev_x = intruder.x
-                prev_y = intruder.y
-                intruder.step()
+                for j in range(int(ROLLOUT_TIME_STEPS)):
 
-                #determine the kernel location that corresponds
-                #to the intruder's new position
-                delta_x = intruder.x-prev_x
-                delta_y = intruder.y-prev_y
+                    #move the intruder to a new square
+                    prev_x = intruder.x
+                    prev_y = intruder.y
+                    intruder.step()
 
-                #print('delta_x', delta_x)
-                #print('delta_y', delta_y)
+                    #determine the kernel location that corresponds
+                    #to the intruder's new position
+                    delta_x = intruder.x-prev_x
+                    delta_y = intruder.y-prev_y
 
-                #update simple and complex kernels
-                simple_kernel[midpoint+delta_x][midpoint+delta_y] += 1
-                kernel[prev_x][prev_y][midpoint + delta_x][midpoint+delta_y] += 1
-                #update overall probability map
-                geographic_probability_map[intruder.x][intruder.y] += 1
+                    #update simple and complex kernels
+                    try:
+                        simple_kernel[midpoint+delta_x][midpoint+delta_y] += 1
+                        kernel[prev_x][prev_y][midpoint + delta_x][midpoint+delta_y] += 1
+                    except IndexError:
+                        print('Intruder stepped too far.')
+                    #update overall probability map
+                    geographic_probability_map[intruder.x][intruder.y] += 1
 
-                #update transition matrix
-                if USE_VECTOR_MATRIX_MULTIPLY == True:
-                    #transition_matrix[((prev_x-x_offset)*ydim+(prev_y-y_offset))/DOWNSAMPLE , ((intruder.x-x_offset)*ydim+(intruder.y-y_offset))/DOWNSAMPLE] += 1
-                    transition_matrix[((prev_x-x_offset)*ydim+(prev_y-y_offset))/DOWNSAMPLE][((intruder.x-x_offset)*ydim+(intruder.y-y_offset))/DOWNSAMPLE] += 1
-                
+                    #update transition matrix
+                    if USE_VECTOR_MATRIX_MULTIPLY == True:
+                        #transition_matrix[((prev_x-x_offset)*ydim+(prev_y-y_offset))/DOWNSAMPLE , ((intruder.x-x_offset)*ydim+(intruder.y-y_offset))/DOWNSAMPLE] += 1
+                        transition_matrix[((prev_x-x_offset)*ydim+(prev_y-y_offset))/DOWNSAMPLE][((intruder.x-x_offset)*ydim+(intruder.y-y_offset))/DOWNSAMPLE] += 1
+                    
 
         #normalize the simple kernel
         intruder.simple_kernel = simple_kernel/(np.sum(simple_kernel)+1e-100)
@@ -208,7 +208,6 @@ def policy_rollout(intruder_list):
                     transition_matrix[i] = transition_matrix[i]/my_sum
             #intruder.transition_matrix = csr_matrix(transition_matrix)
             intruder.transition_matrix = transition_matrix
-
 
 def predict_intruder_location_optimized(priors, intruder, mode, w, x_offset=0, y_offset=0):
     new_priors = np.copy(priors)
@@ -251,7 +250,6 @@ def predict_intruder_location_optimized(priors, intruder, mode, w, x_offset=0, y
         #reshape back into 2D array
         #return np.reshape(new_priors_vector.toarray(), [xlim,ylim])
         return np.reshape(new_priors_vector, [xlim,ylim])
-
 
 def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0):
     new_priors = np.copy(priors)
@@ -304,9 +302,8 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
 
         return new_priors/(np.sum(new_priors)+1e-100)
 
-
 def update_priors(PRIORS, w, c, i):
-#If we spotted the intruder, update OBSERVATION with his location
+    #If we spotted the intruder, update OBSERVATION with his location
     #(We assume determinism: if he's in our range of vision, we spotted him.)
     if heardSomething(c, i):
         #determine the location at which the "sound" was heard
@@ -409,7 +406,6 @@ def paint_to_screen(PRIORS, w, c, i):
                  isovist_surface.set_alpha(80)
                  pygame.draw.polygon(isovist_surface, WHITE, drone_isovist)
                  screen.blit(isovist_surface, isovist_surface.get_rect())
-
 
         #TREATS
         for k in w.cookies:
