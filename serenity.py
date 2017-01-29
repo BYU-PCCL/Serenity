@@ -21,6 +21,9 @@ import intruder2
 HEADLESS = False
 #HEADLESS = True
 
+#WORLD_TYPE = "bremen"
+WORLD_TYPE = "blocks"
+
 #COLOR DEFINITIONS
 BLACK    = (   0,   0,   0)
 WHITE    = ( 255, 255, 255)
@@ -39,16 +42,17 @@ INTRUDER_MOMENTUM = 3 #sum of momentum plus intruder's jitter must be less than 
 KERNEL_SIZE = 11 #must be an odd number 
 ICON_SIZE = 10
 
-#XDIM = 500
-#YDIM = 500
-#XDIM = 1400
-#YDIM = 1000
-XDIM=500
-YDIM=500
+if WORLD_TYPE == "bremen":
+    XDIM=1000
+    YDIM=1000
+    OBSTACLES = 0	#not used, but needs to be declared
+else:
+    XDIM=500
+    YDIM=500
+    OBSTACLES = 10               
 
 MODE = 0                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
-OBSTACLES = 10                #number of obstacles on the world map
 INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints
 MESSY_WORLD = True
 
@@ -57,7 +61,7 @@ ROLLOUT_EPOCHS = 1000
 ROLLOUT_TIME_STEPS = 1000
 PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
 USE_VECTOR_MATRIX_MULTIPLY = False
-DOWNSAMPLE = 2                         #downsample factor for prior updates
+DOWNSAMPLE = 2                         #downsample factor for prior updates with complex kernel
 
 SHOW_SIMPLE_KERNEL = False
 SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
@@ -458,7 +462,7 @@ if HEADLESS != True:
     pygame.font.init()
 
 print('Initializing world...')
-w = world.World(XDIM, YDIM, TREATS, OBSTACLES)
+w = world.World(XDIM, YDIM, TREATS, WORLD_TYPE, OBSTACLES)
 
 print('Initializing intruder...')
 #i = intruder.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
