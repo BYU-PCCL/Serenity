@@ -113,7 +113,14 @@ class Copter:
 		    max_prob = prob
 		    max_boundary = boundary
 
-	point = ((max_boundary[0] + max_boundary[1])/2, (max_boundary[2]+max_boundary[3])/2)
+	if max_boundary == None:
+	    #something very strange happened
+	    print "No max_boundary found on search region"
+	    print "np.sum(priors) = %f" % (np.sum(priors))
+	    point = None
+	else:
+	    point = ((max_boundary[0] + max_boundary[1])/2, (max_boundary[2]+max_boundary[3])/2)
+
 	return point
 
     def generate_path(self, priors, x_loc, y_loc):
@@ -138,7 +145,7 @@ class Copter:
 	stop_x = min(self.my_world.movement_bounds[1], x_loc + NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
 	stop_y = min(self.my_world.movement_bounds[3], y_loc + NUM_SEARCH_REGIONS*SEARCH_STEP_SIZE)
 
-	threshhold = np.mean(priors)
+	threshhold = np.mean(priors) - 1e-5
 	probs = []
 	locs = []
         for x in range(start_x, stop_x-SEARCH_RADIUS, SEARCH_STEP_SIZE):
@@ -159,7 +166,12 @@ class Copter:
 	    #exceed threshold, then we'll switch to a
 	    #different area of the map
 	    point = self.choose_search_region(priors)
-	    path = self.generate_path(priors, point[0], point[1])
+	    if point == None:
+		#no good search region found, so we'll just
+		#go to a random location
+		path.append((rand.randint(self.my_world.movement_bounds[0], self.my_world.movement_bounds[1]), rand.randint(self.my_world.movement_bounds[2], self.my_world.movement_bounds[3])))
+	    else:
+	        path = self.generate_path(priors, point[0], point[1])
 
 	return path
 

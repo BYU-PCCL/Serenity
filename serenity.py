@@ -12,7 +12,7 @@ import tensorflow as tf
 
 import world
 import copter
-import intruder2
+import intruder
 
 #HEADLESS
 #if you're telnetting from home from a non-linx
@@ -21,8 +21,18 @@ import intruder2
 HEADLESS = False
 #HEADLESS = True
 
-#WORLD_TYPE = "bremen"
-WORLD_TYPE = "blocks"
+WORLD_TYPE = "bremen"
+#WORLD_TYPE = "blocks"
+
+#INTRUDER_TYPE = "RRT_INTRUDER"
+INTRUDER_TYPE = "THIEF"
+#INTRUDER_TYPE = "TRESPASSER"
+
+if INTRUDER_TYPE == "RRT_INTRUDER":
+    #RRT is too slow for a full policy rollout,
+    UNIFORM_PRIOR = True
+else:
+    UNIFORM_PRIOR = False
 
 #COLOR DEFINITIONS
 BLACK    = (   0,   0,   0)
@@ -38,8 +48,9 @@ LITE_GRY = ( 100, 100, 100)
 
 #GLOBAL CONSTANTS 
 MAX_MOMENTUM = 10 
-INTRUDER_MOMENTUM = 3 #sum of momentum plus intruder's jitter must be less than KERNEL_SIZE/2
-KERNEL_SIZE = 11 #must be an odd number 
+INTRUDER_MOMENTUM = 3 	#sum of momentum plus intruder's jitter 
+			#must be less than KERNEL_SIZE/2
+KERNEL_SIZE = 11 	#must be an odd number 
 ICON_SIZE = 10
 
 if WORLD_TYPE == "bremen":
@@ -53,10 +64,11 @@ else:
 
 MODE = 0                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
-INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints
 MESSY_WORLD = True
 
-UNIFORM_PRIOR = False		#if true, movement kernels will not be built
+#DEPRECATED
+#INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints
+
 ROLLOUT_EPOCHS = 1000
 ROLLOUT_TIME_STEPS = 1000
 PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
@@ -464,10 +476,17 @@ if HEADLESS != True:
 print('Initializing world...')
 w = world.World(XDIM, YDIM, TREATS, WORLD_TYPE, OBSTACLES)
 
-print('Initializing intruder...')
-#i = intruder.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
-#i = intruder.Trespasser(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
-i = intruder2.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+print('Intruder Type: ' + INTRUDER_TYPE)
+if INTRUDER_TYPE == "RRT_INTRUDER":
+    i = intruder.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+elif INTRUDER_TYPE == "TRESPASSER":
+    i = intruder.Trespasser(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+elif INTRUDER_TYPE == "THIEF": 
+    i = intruder.Thief(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+else:
+    print "UNKNOWN INTRUDER_TYPE"
+    print INTRUDER_TYPE
+    sys.exit()
 
 print('Rolling out policy...')
 policy_rollout([i])

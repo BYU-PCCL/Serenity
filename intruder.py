@@ -67,34 +67,36 @@ class Intruder:
 
         return exact_path
 
-    def random_location(self):
-        pass
+###DEPRECATED###
+#    def random_location(self):
+#        pass
 
-    def momentum_step(self):
-        self.momentum_x += rand.randint(-1, 1)
-        self.momentum_y += rand.randint(-1, 1)
-        if abs(self.momentum_x) > self.MAX_SPEED:
-            self.momentum_x = 0
-        if abs(self.momentum_y) > self.MAX_SPEED:
-            self.momentum_y = 0
-        
-        new_x = self.x
-        new_y = self.y
-        
-        new_x = max(0, new_x + self.momentum_x)
-        new_y = max(0, new_y + self.momentum_y)
-        new_x = min(self.xdim-1, new_x)
-        new_y = min(self.ydim-1, new_y)
-        
-        if self.my_world.is_valid(new_x, new_y):
-            self.x = new_x
-            self.y = new_y
-        else:
-            self.momentum_x = 0
-            self.momentum_y = 0
+###DEPRECATED####
+#   def momentum_step(self):
+#        self.momentum_x += rand.randint(-1, 1)
+#        self.momentum_y += rand.randint(-1, 1)
+#        if abs(self.momentum_x) > self.MAX_SPEED:
+#            self.momentum_x = 0
+#        if abs(self.momentum_y) > self.MAX_SPEED:
+#            self.momentum_y = 0
+#        
+#        new_x = self.x
+#        new_y = self.y
+#        
+#        new_x = max(0, new_x + self.momentum_x)
+#        new_y = max(0, new_y + self.momentum_y)
+#        new_x = min(self.xdim-1, new_x)
+#        new_y = min(self.ydim-1, new_y)
+#        
+#        if self.my_world.is_valid(new_x, new_y):
+#            self.x = new_x
+#            self.y = new_y
+#        else:
+#            self.momentum_x = 0
+#            self.momentum_y = 0
 
     def select_waypoint(self):
-        print('Selecting waypoint...')
+        #print('Selecting waypoint...')
 
         self.path_progress = 0
 
@@ -133,10 +135,10 @@ class Intruder:
            self.momentum_x = 1
            self.momentum_y = 1
 
-        print('self.path_progress', self.path_progress)
-        print('self.waypoint, self.x, self.y', self.waypoint, self.x, self.y)
-
         if self.use_rrt:
+        
+            print('self.path_progress', self.path_progress)
+            print('self.waypoint, self.x, self.y', self.waypoint, self.x, self.y)
 
             if self.path_progress >= len(self.path):
                 self.select_waypoint()
@@ -181,10 +183,13 @@ class Intruder:
 
 
     def step(self):
-        if INTRUDER_TYPE == 0:
-            self.momentum_step()
-        else:
-            self.waypoint_step()
+	self.waypoint_step()
+#---DEPRECATED#-----
+#        if INTRUDER_TYPE == 0:
+#            self.momentum_step()
+#        else:
+#            self.waypoint_step()
+#------------------
 
     def select_random_location(self):
         x1,x2,y1,y2 = self.my_world.movement_bounds[0], self.my_world.movement_bounds[1], self.my_world.movement_bounds[2], self.my_world.movement_bounds[3]
@@ -205,7 +210,44 @@ class Intruder:
         return self.kernal[x][y]
 
 
+class Thief(Intruder):
+
+    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=1, start_x=-1, start_y=-1, use_rrt=True):
+	
+	#THIEF is a normal intruder that does not use RRT
+	#It just makes a stupid bee-line toward the cookies
+        
+	Intruder.__init__(self, my_world, MESSY_WORLD, target, max_speed, start_x, start_y, False) #no RRT
+
+
 class Trespasser(Intruder):
 
-    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=1, start_x=-1, start_y=-1):
-        Intruder.__init__(self, my_world, MESSY_WORLD, target, max_speed, start_x, start_y)
+    def __init__(self, my_world, MESSY_WORLD=True, target="", max_speed=1, start_x=-1, start_y=-1, use_rrt=True):
+        Intruder.__init__(self, my_world, MESSY_WORLD, target, max_speed, start_x, start_y, False) #no RRT
+
+    def momentum_step(self):
+        self.momentum_x += rand.randint(-1, 1)
+        self.momentum_y += rand.randint(-1, 1)
+        if abs(self.momentum_x) > self.MAX_SPEED:
+            self.momentum_x = 0
+        if abs(self.momentum_y) > self.MAX_SPEED:
+            self.momentum_y = 0
+
+        new_x = self.x
+        new_y = self.y
+
+        new_x = max(0, new_x + self.momentum_x)
+        new_y = max(0, new_y + self.momentum_y)
+        new_x = min(self.xdim-1, new_x)
+        new_y = min(self.ydim-1, new_y)
+
+        if self.my_world.is_valid(new_x, new_y):
+            self.x = new_x
+            self.y = new_y
+        else:
+            self.momentum_x = 0
+            self.momentum_y = 0
+
+    def step(self):
+        self.momentum_step()
+
