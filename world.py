@@ -61,7 +61,8 @@ class World:
 	    self.polygon_segments = []
 	else:
             self.movement_bounds = [0,xdim-1,0,ydim-1]
-            self.polygon_segments = self.initialize_terrain(num_obstacles, min_obst_dim, max_obst_dim)
+	    self.polygon_segments = []
+            self.polygon_segments += self.initialize_terrain(num_obstacles, min_obst_dim, max_obst_dim)
        
         ###DEPRECATED###
 	#self.create_valid_squares()
@@ -128,6 +129,14 @@ class World:
         self.terrain.T[self.movement_bounds[2]] = np.ones([self.xdim])
         self.terrain.T[self.movement_bounds[3]] = np.ones([self.xdim])
 
+	#adds matching boundary polygon segments for isovist calculations
+	point1 = (self.movement_bounds[0], self.movement_bounds[2])
+	point2 = (self.movement_bounds[1], self.movement_bounds[2])
+	point3 = (self.movement_bounds[1], self.movement_bounds[3])
+	point4 = (self.movement_bounds[0], self.movement_bounds[3])
+	segments = [[point1, point2], [point2,point3], [point3, point4], [point4,point1]]
+	#self.polygon_segments.append([segments])
+
     def initialize_terrain(self, num_obstacles, min_obst_dim, max_obst_dim):
 
 	#simple world with rectangular obstacles
@@ -152,7 +161,7 @@ class World:
 	    point2 = (end_x, end_y)
 	    point3 = (start_x, end_y)
 	    point4 = (start_x, start_y)
-	    segments = [[point1, point2], [point3, point4]]
+	    segments = [[point1, point2], [point2,point3], [point3, point4], [point4,point1]]
 	    polygon_segments.append(segments)
 	#print polygon_segments
 	#sys.exit()

@@ -21,8 +21,8 @@ import intruder
 HEADLESS = False
 #HEADLESS = True
 
-WORLD_TYPE = "bremen"
-#WORLD_TYPE = "blocks"
+#WORLD_TYPE = "bremen"
+WORLD_TYPE = "blocks"
 
 #INTRUDER_TYPE = "RRT_INTRUDER"
 INTRUDER_TYPE = "THIEF"
@@ -62,7 +62,7 @@ else:
     YDIM=500
     OBSTACLES = 10               
 
-MODE = 0                 #0 = simple kernel, 1 = complex kernel
+MODE = 1                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
 MESSY_WORLD = True
 
@@ -73,7 +73,7 @@ ROLLOUT_EPOCHS = 1000
 ROLLOUT_TIME_STEPS = 1000
 PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
 USE_VECTOR_MATRIX_MULTIPLY = False
-DOWNSAMPLE = 2                         #downsample factor for prior updates with complex kernel
+DOWNSAMPLE = 3                         #downsample factor for prior updates with complex kernel
 
 SHOW_SIMPLE_KERNEL = False
 SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
@@ -319,7 +319,7 @@ def predict_intruder_location(priors, intruder, mode, w, x_offset=0, y_offset=0)
 
         return new_priors/(np.sum(new_priors)+1e-100)
 
-def update_priors(PRIORS, w, c, i):
+def update_priors(PRIORS, w, c, i, i_model):
     #If we spotted the intruder, update OBSERVATION with his location
     #(We assume determinism: if he's in our range of vision, we spotted him.)
     if heardSomething(c, i):
@@ -337,7 +337,7 @@ def update_priors(PRIORS, w, c, i):
             targ_x = rand.randint(boundary[0], boundary[1])
             targ_y = rand.randint(boundary[2], boundary[3])
             print("SOUND HEARD at" + str([targ_x,targ_y]) + "!")
-
+	
         #derive: Probability that intruder is here given that I heard a sound
         #p(Intruder | heard something) = p(heard something | intruder)*p(intruder)/p(heard something)
         p_heard_something = PRIORS[targ_x][targ_y] * P_HEARD_SOMETHING_IF_INTRUDER + (1.-PRIORS[targ_x][targ_y]) * P_HEARD_SOMETHING_IF_NO_INTRUDER
@@ -349,13 +349,33 @@ def update_priors(PRIORS, w, c, i):
         #WE HEARD SOMETHING
         #so assume that our current waypoint may no longer be accurate
         c.waypoint = c.select_waypoint(PRIORS)
+	
+	#TRY TO PREDICT WHERE THE INTRUDER IS HEADED
+	if c.last_intruder_x >= 0 and c.last_intruder_y >=0:
+	    #This is the second consecutive sighting of the intruder
+	    #So let's infer something from his trajectory
+	    trajectory=(c.last_intruder_x-targ_x, c.last_intruder_y-targ_y)
+
+	    #TO-DO!!!
+	    #next, we'll calculate possible RRT paths and
+	    #keep the ones that begin on a near-matching trajectory
+	
+	#remember the last known sighting
+	c.last_intruder_x = targ_x
+	c.last_intruder_y = targ_y
 
     else: #we didn't hear anything
+
+	#we didn't see the intruder, so reset
+	#the last sighting flags
+	c.last_intruder_x = -1
+	c.last_intruder_y = -1
+
 
         #derive: Probability that intruder is here given that I heard NO sound
         #p(Intruder | no sound) = p(didn't hear anything | intruder) * p(Intruder) / p(heard something)
         boundaries = c.get_hearing_boundaries()
-        p_intruder_in_hearing_range = np.mean(PRIORS[boundaries[0]:boundaries[1], boundaries[2]:boundaries[3]])
+        p_intruder_in_hearing_range = np.mean(PRIORS[int(boundaries[0]):int(boundaries[1]), int(boundaries[2]):int(boundaries[3])])
         p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
         p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
         
@@ -479,10 +499,13 @@ w = world.World(XDIM, YDIM, TREATS, WORLD_TYPE, OBSTACLES)
 print('Intruder Type: ' + INTRUDER_TYPE)
 if INTRUDER_TYPE == "RRT_INTRUDER":
     i = intruder.Intruder(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+    i_model = intruder.Thief(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
 elif INTRUDER_TYPE == "TRESPASSER":
     i = intruder.Trespasser(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+    i_model = i
 elif INTRUDER_TYPE == "THIEF": 
     i = intruder.Thief(w, MESSY_WORLD, "cookies", INTRUDER_MOMENTUM)
+    i_model = i
 else:
     print "UNKNOWN INTRUDER_TYPE"
     print INTRUDER_TYPE
@@ -524,7 +547,7 @@ while done != True:
     i.step()
 
     #update probs based on observations
-    PRIORS = update_priors(PRIORS, w, c, i)
+    PRIORS = update_priors(PRIORS, w, c, i, i_model)
 
     #predict intruder's coords on next time step
     #PRIORS = predict_intruder_location(PRIORS, i, MODE, w)    
