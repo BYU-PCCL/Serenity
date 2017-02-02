@@ -11,6 +11,8 @@ from my_rrt import *
 from numpy import atleast_2d
 a2d = atleast_2d
 
+# ========================================================
+
 class Fullworld( object ):
     def __init__( self ):
 
@@ -35,6 +37,40 @@ class Fullworld( object ):
 
         self.UAVLocation = ( 0.468, 1-0.764 )
         self.UAVForwardVector = ( 0.0, 0.010 )
+
+    # ========================================================
+
+    def sample_initial_state( Q, cond_vars ):
+        cnt = len( self.locs )
+        sc = Q.choice( p=1.0/cnt*np.ones((1,cnt)), name="sloc" )
+        gc = Q.choice( p=1.0/cnt*np.ones((1,cnt)), name="gloc" )
+        cur_loc = np.atleast_2d( self.locs[sc] )
+        goal_loc = np.atleast_2d( self.locs[gc] )
+        rrt_path = self.my_rrt( start_loc, goal_loc )
+
+        return ( gc, cur_loc, goal_loc, rrt_path )
+
+    def roll_forward( Q, state, cond_vars ):
+        gc, cur_loc, goal_loc, rrt_path = state
+
+        if dist( cur_loc, goal_loc ) < 0.05:
+            gc = Q.choice( p=1.0/cnt*np.ones((1,cnt)), name="gloc" )            
+            goal_loc = np.atleast_2d( self.locs[gc] )
+            rrt_path = self.my_rrt( start_loc, goal_loc )
+        else:
+            cur_loc = rrt_path[0] # new location is whatever the RRT says is next
+            rrt_path = rrt_path[1:] # trim the path
+
+        return ( gc, cur_loc, goal_loc, rrt_path )
+
+    def obs_lik( Q, state, obs, cond_vars ):
+        gc, cur_loc, goal_loc, rrt_path = state
+        if dist( cond_vars.UAVLocation, cur_loc ) < 0.05:
+            Q.flip( p=0.999, name="obs" )
+        else:
+            Q.flip( p=0.001, name="obs" )
+
+    # ========================================================
 
     def listify_segs( self, rx1,ry1,rx2,ry2 ):
         result = []
