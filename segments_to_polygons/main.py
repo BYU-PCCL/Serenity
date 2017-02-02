@@ -26,11 +26,11 @@ def generate_segments(number_of_segments):
     size=(number_of_segments, 4)
   )
 
-def generate_position():
+def generate_position(lower_bound=GENERATION_LOWER_BOUND, upper_bound=GENERATION_UPPER_BOUND):
   '''
   Returns an array of two numbers.
   '''
-  return np.random.random_integers(GENERATION_LOWER_BOUND, GENERATION_UPPER_BOUND, size=2)
+  return np.random.random_integers(lower_bound, upper_bound, size=2)
 
 def get_rear_rectangle_corners(segment, position):
   '''
@@ -49,7 +49,7 @@ def get_rear_rectangle_corners(segment, position):
 
   return corner1, corner2
 
-def segments_to_polygons(segments, position):
+def segments_to_polygons(segments, position, vision_range=200):
   '''
   segments: an matrix of shape [n, 4] where n is the number of segments.
   position: a 2-element array
@@ -61,7 +61,7 @@ def segments_to_polygons(segments, position):
 
   for segment in segments:
     assumed_area = np.random.normal(
-      loc=250**2, 
+      loc=BUILDING_SIZE, 
       scale=(10 * BUILDING_VARIANCE)**2
     )
 
@@ -73,6 +73,11 @@ def segments_to_polygons(segments, position):
     proportion_to_keep = side_length / face_length
 
     corner1, corner2 = get_rear_rectangle_corners(segment, position)
+
+    if face_length < 10 or \
+      (point_distance(position, corner1) > vision_range and \
+       point_distance(position, corner2) > vision_range):
+       continue
 
     polygons.append([
       segment_bottom,

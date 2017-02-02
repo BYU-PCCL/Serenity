@@ -156,7 +156,10 @@ class Isovist:
 
         #dot product equation stuff to find angle between the two vectors
         dotProduct = uniqueVectorX * dx + uniqueVectorY * dy
-        cosineTheta = dotProduct / (uniqueMag * dMag)
+	#print dotProduct
+	#print uniqueMag
+	#print dMag
+        cosineTheta = dotProduct / (uniqueMag * dMag + 1e-100)
         cosineTheta = min(1,max(cosineTheta,-1))
 
         angleBetween = math.acos(cosineTheta)

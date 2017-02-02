@@ -115,6 +115,7 @@ def main():
 	array = np.zeros([xdim, ydim])
 	screen, clock = InitScreen(xdim, ydim)
 	polygonSegments = getPolygonSegments()
+	print polygonSegments
 
 	# Clear canvas
 	screen.fill((255,255,255))
