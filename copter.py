@@ -13,7 +13,7 @@ MARGIN = 0.001
 
 class Copter:
 
-    def __init__(self, my_world, priors=[], start_x=-1, start_y=-1):
+    def __init__(self, my_world, start_x=-1, start_y=-1):
         self.xdim = my_world.xdim
         self.ydim = my_world.ydim
 	self.my_world = my_world
@@ -27,8 +27,8 @@ class Copter:
            self.y = start_y
         #self.waypoint = (rand.randint(0, self.xdim), rand.randint(0,self.ydim))
 	#self.RRT_path = self.generate_path_to_point(self.waypoint)
-	self.path = self.generate_path(priors, self.x, self.y)
-	self.path_waypoint = self.path[0]
+#	self.path = self.generate_path(priors, self.x, self.y)
+#	self.path_waypoint = self.path[0]
         self.momentum_x = 1
         self.momentum_y = 1
         self.hearing_range = 80  
@@ -40,6 +40,10 @@ class Copter:
         self.hearing_square.fill((255, 255, 255)) #white
 	self.last_x = self.x
 	self.last_y = self.y
+
+    def set_initial_path(self,priors):
+	self.path = self.generate_path(priors, self.x, self.y)
+	self.path_waypoint = self.path[0]
 
     def select_waypoint(self, priors=[]):
         #if no priors were passed in, 
