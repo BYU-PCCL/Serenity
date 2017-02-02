@@ -33,5 +33,5 @@ class density_wrapper:
 	self.c.step(self.DENSITY_MAP)
         self.i.step()
     	self.DENSITY_MAP = self.pm.step()
-	return self.DENSITY_MAP
+	return np.stack((self.DENSITY_MAP, self.DENSITY_MAP, self.DENSITY_MAP), axis=-1)
 
