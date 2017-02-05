@@ -130,12 +130,12 @@ class World:
         self.terrain.T[self.movement_bounds[3]] = np.ones([self.xdim])
 
 	#adds matching boundary polygon segments for isovist calculations
-	point1 = (self.movement_bounds[0], self.movement_bounds[2])
-	point2 = (self.movement_bounds[1], self.movement_bounds[2])
-	point3 = (self.movement_bounds[1], self.movement_bounds[3])
-	point4 = (self.movement_bounds[0], self.movement_bounds[3])
+	point1 = (self.movement_bounds[1], self.movement_bounds[2])
+	point2 = (self.movement_bounds[1], self.movement_bounds[3])
+	point3 = (self.movement_bounds[0], self.movement_bounds[3])
+	point4 = (self.movement_bounds[0], self.movement_bounds[2])
 	segments = [[point1, point2], [point2,point3], [point3, point4], [point4,point1]]
-	#self.polygon_segments.append([segments])
+	self.polygon_segments.append(segments)
 
     def initialize_terrain(self, num_obstacles, min_obst_dim, max_obst_dim):
 

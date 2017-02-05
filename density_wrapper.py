@@ -9,6 +9,7 @@ import prob_mass
 MESSY_WORLD = True
 INTRUDER_MOMENTUM=4
 DOWNSAMPLE_FACTOR=2
+COLOR_SCALE = 1000 * 1000 * 2.5
 
 
 class density_wrapper:
@@ -32,6 +33,6 @@ class density_wrapper:
     def step(self):
 	self.c.step(self.DENSITY_MAP)
         self.i.step()
-    	self.DENSITY_MAP = self.pm.step()
+    	self.DENSITY_MAP = COLOR_SCALE * self.pm.step()
 	return np.stack((self.DENSITY_MAP, self.DENSITY_MAP, self.DENSITY_MAP), axis=-1)
 

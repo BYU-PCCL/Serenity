@@ -9,6 +9,7 @@ import sys
 from scipy import signal
 import time
 import tensorflow as tf
+from PIL import Image, ImageDraw
 
 import world
 import copter
@@ -17,10 +18,10 @@ import intruder
 ##DEPRECATED###
 #KERNEL_SIZE = 11 #must be an odd number
 
-#P_HEARD_SOMETHING_IF_NO_INTRUDER = 1e-5
-#P_HEARD_SOMETHING_IF_INTRUDER = 0.999
-P_HEARD_SOMETHING_IF_NO_INTRUDER = 0.0                #probablity of false pos.
-P_HEARD_SOMETHING_IF_INTRUDER = 1.0                #probability of hearing intr.
+P_HEARD_SOMETHING_IF_NO_INTRUDER = 1e-3
+P_HEARD_SOMETHING_IF_INTRUDER = 0.9
+#P_HEARD_SOMETHING_IF_NO_INTRUDER = 0.0                #probablity of false pos.
+#P_HEARD_SOMETHING_IF_INTRUDER = 1.0                #probability of hearing intr.
 P_SAW_SOMETHING_IF_NO_INTRUDER = 0.0                 #probability of false pos.
 P_SAW_SOMETHING_IF_INTRUDER = 1.0                #probability of seeing intr.
 
@@ -75,9 +76,21 @@ class prob_mass:
 	self.last_intruder_x=-1
 	self.last_intruder_y=-1
 
+	self.isovist_color = (255,255,255) #white
 	print("INITIALIZATION COMPLETE!")
 
-    #FUNCTION DEFINITIONS
+  
+    def intruder_in_sight_range(self):
+	intersections = self.w.isovist.GetIsovistIntersections((self.c.x, self.c.y),self.c.movement_vector()) 
+	return self.w.isovist.FindIntruderAtPoint((self.i.x, self.i.y), intersections)
+
+    def saw_something(self):
+        if self.intruder_in_sight_range():            
+            return rand.random() < P_HEARD_SOMETHING_IF_INTRUDER
+        else:
+            return rand.random() < P_HEARD_SOMETHING_IF_NO_INTRUDER
+
+
     def intruder_in_hearing_range(self):
         c = self.c
 	i = self.i
@@ -216,13 +229,14 @@ class prob_mass:
     def update_priors(self):
         #If we spotted the intruder, update OBSERVATION with his location
         #(We assume determinism: if he's in our range of vision, we spotted him.)
-        if self.heardSomething():
+        if self.saw_something():
             #determine the location at which the "sound" was heard
-            if self.intruder_in_hearing_range():
+	    self.isovist_color = (255,255,255) #white
+            if self.intruder_in_sight_range():
                 #we really did hear the intruder
                 targ_x = self.i.x
                 targ_y = self.i.y
-                print("INTRUDER HEARD at" + str([targ_x,targ_y]) + "!")
+                print("INTRUDER SIGHTED at" + str([targ_x,targ_y]) + "!")
             else:
                 #this was a false noise,
                 #so we randomly assign it to 
@@ -230,7 +244,7 @@ class prob_mass:
                 boundary = self.c.get_hearing_boundaries()
                 targ_x = rand.randint(boundary[0], boundary[1])
                 targ_y = rand.randint(boundary[2], boundary[3])
-                print("SOUND HEARD at" + str([targ_x,targ_y]) + "!")
+                print("SOMETHING SEEN at" + str([targ_x,targ_y]) + "!")
 	
             #derive: Probability that intruder is here given that I heard a sound
             #p(Intruder | heard something) = p(heard something | intruder)*p(intruder)/p(heard something)
@@ -259,6 +273,7 @@ class prob_mass:
 	    self.last_intruder_y = targ_y
 
         else: #we didn't hear anything
+	    self.isovist_color = (0,0,150) #medium green
   
 	    #we didn't see the intruder, so reset
 	    #the last sighting flags
@@ -268,14 +283,49 @@ class prob_mass:
 
             #derive: Probability that intruder is here given that I heard NO sound
             #p(Intruder | no sound) = p(didn't hear anything | intruder) * p(Intruder) / p(heard something)
-            boundaries = self.c.get_hearing_boundaries()
-            p_intruder_in_hearing_range = np.mean(self.PRIORS[int(boundaries[0]):int(boundaries[1]), int(boundaries[2]):int(boundaries[3])])
-            p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
-            p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
+	    if False:
+		#THIS IS THE OLD WAY,
+		#based on a square of "hearing" rather than an isovist
+                boundaries = self.c.get_hearing_boundaries()
+                p_intruder_in_hearing_range = np.mean(self.PRIORS[int(boundaries[0]):int(boundaries[1]), int(boundaries[2]):int(boundaries[3])])
+                p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
+                p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
         
-            OBSERVATION = np.ones([self.w.xdim, self.w.ydim])
-            OBSERVATION = OBSERVATION * (1.-p_intruder_if_no_sound)
-            OBSERVATION[int(boundaries[0]):int(boundaries[1]), int(boundaries[2]):int(boundaries[3])] = p_intruder_if_no_sound
+                OBSERVATION = np.ones([self.w.xdim, self.w.ydim])
+                OBSERVATION = OBSERVATION * (1.-p_intruder_if_no_sound)
+                OBSERVATION[int(boundaries[0]):int(boundaries[1]), int(boundaries[2]):int(boundaries[3])] = p_intruder_if_no_sound
+
+	    else:
+		#This is the new way. Isovist-based
+	  	polygon = self.w.isovist.GetIsovistIntersections((self.c.x,self.c.y), self.c.movement_vector(), self.c.isovist_angle)
+		polygon.append((self.c.x,self.c.y))
+
+		if len(polygon) > 2:
+		    img = Image.new('L', (self.w.xdim, self.w.ydim), 0)
+		    ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
+		    isovist_mask = np.array(img).T
+                
+		    #boundaries = self.c.get_hearing_boundaries()
+                    #p_intruder_in_hearing_range = np.mean(self.PRIORS[int(boundaries[0]):int(boundaries[1]), int(boundaries[2]):int(boundaries[3])])
+                    #p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
+                    #p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
+
+                    p_intruder_in_hearing_range = np.mean(self.PRIORS*isovist_mask)
+                    p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
+                    p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
+
+		    OBSERVATION = isovist_mask
+		    print "p_intruder_if_no_sound = %f" % (p_intruder_if_no_sound)
+		    OBSERVATION = OBSERVATION * p_intruder_if_no_sound + (1-isovist_mask) * (1-p_intruder_if_no_sound)
+
+		else:
+		    #We made no observation, so priors will stay unchanged
+                    OBSERVATION = np.ones([self.w.xdim, self.w.ydim])
+	
+	    #print "POLYGON"
+	    #print polygon
+	    #raw_input("test")
+
             self.PRIORS = np.multiply(self.PRIORS, OBSERVATION)
 
         #if we think the intruder is nowhere,

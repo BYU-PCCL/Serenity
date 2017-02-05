@@ -26,8 +26,8 @@ import prob_mass
 HEADLESS = False
 #HEADLESS = True
 
-WORLD_TYPE = "bremen"
-#WORLD_TYPE = "blocks"
+#WORLD_TYPE = "bremen"
+WORLD_TYPE = "blocks"
 
 MODE = 1                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
@@ -105,6 +105,9 @@ P_HEARD_SOMETHING_IF_INTRUDER = 1.0                #probability of hearing intr.
 P_SAW_SOMETHING_IF_NO_INTRUDER = 0.0                 #probability of false pos.
 P_SAW_SOMETHING_IF_INTRUDER = 1.0                #probability of seeing intr.
 
+IMAGE_CAPTURE_RATE = 10 #capture an image to disk ever n steps
+			 #(if ==1, no images are saved)
+
 
 def show_priors(priors):
     screen.fill(BLACK)
@@ -113,7 +116,7 @@ def show_priors(priors):
     pygame.display.flip()
     raw_input("Press enter to continue")
 
-def paint_to_screen(PRIORS, w, c, i):
+def paint_to_screen(PRIORS, w, c, i, filename = "", isovist_color=WHITE):
     #UPDATE SCREEN DISPLAY 
     if HEADLESS != True:
         screen.fill(BLACK)
@@ -144,7 +147,7 @@ def paint_to_screen(PRIORS, w, c, i):
         #ISOVIST
         if SHOW_ISOVIST == True:
              #drone_isovist = w.isovist.FindIsovistForAgent(c.x,c.y)
-             drone_isovist = w.isovist.GetIsovistIntersections((c.x,c.y), c.movement_vector(), 90)
+             drone_isovist = w.isovist.GetIsovistIntersections((c.x,c.y), c.movement_vector(), c.isovist_angle)
              for point in drone_isovist:
                  #print point
                  x = point[0]
@@ -154,7 +157,8 @@ def paint_to_screen(PRIORS, w, c, i):
                  isovist_surface = pygame.Surface((XDIM,YDIM))
                  isovist_surface = pygame.surfarray.make_surface((PRIORS*COLOR_SCALE).astype(int))
                  isovist_surface.set_alpha(80)
-                 pygame.draw.polygon(isovist_surface, WHITE, drone_isovist)
+                 pygame.draw.polygon(isovist_surface, isovist_color, drone_isovist)
+                 #pygame.draw.polygon(isovist_surface, c.isovist_color, drone_isovist)
                  screen.blit(isovist_surface, isovist_surface.get_rect())
 
         #TREATS
@@ -194,6 +198,10 @@ def paint_to_screen(PRIORS, w, c, i):
             SAVED_KERNEL = np.stack((kern, kern, kern), axis=-1)
             img = pygame.surfarray.make_surface((SAVED_KERNEL*KERNEL_COLOR_SCALE).astype(int))
             screen.blit(img, (10,10), img.get_rect())
+
+
+	if filename != "":
+	    pygame.image.save(screen, filename)
 
 
         #FLIP THE DISPLAY
@@ -250,6 +258,7 @@ if HEADLESS != True:
 done = False
 
 print('Entering main loop...')
+counter = 0
 while done != True:
     if HEADLESS != True:
         for event in pygame.event.get(): #User did something
@@ -267,7 +276,16 @@ while done != True:
     i.step()
     pm.step()
 
-    paint_to_screen(pm.PRIORS, w, c, i) #display the current world state and sprite locations
+    #print "ISOVIST DEBUGGING:"
+    #print WHITE
+    #print pm.isovist_color
+
+    counter += 1
+    if counter % IMAGE_CAPTURE_RATE == 1:
+	filename = "screen_captures/img"  + str(counter) + ".jpeg"
+        paint_to_screen(pm.PRIORS, w, c, i, filename) 
+    else:
+	paint_to_screen(pm.PRIORS, w, c, i)
      
     if HEADLESS != True:
         clock.tick(60) #60 frames per second

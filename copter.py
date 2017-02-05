@@ -40,6 +40,7 @@ class Copter:
         self.hearing_square.fill((255, 255, 255)) #white
 	self.last_x = self.x
 	self.last_y = self.y
+	self.isovist_angle = 90
 
     def set_initial_path(self,priors):
 	self.path = self.generate_path(priors, self.x, self.y)
