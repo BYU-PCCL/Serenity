@@ -29,7 +29,7 @@ HEADLESS = False
 #WORLD_TYPE = "bremen"
 WORLD_TYPE = "blocks"
 
-MODE = 1                 #0 = simple kernel, 1 = complex kernel
+MODE = 0                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
 MESSY_WORLD = True
 
@@ -57,14 +57,14 @@ WHITE    = ( 255, 255, 255)
 GREEN    = (   0, 255,   0)
 DRK_GREEN = (   0, 100,   0)
 RED      = ( 255,   0,   0)
-BROWN      = ( 150,   50,  50)
+BROWN      = ( 250,   100,  100)
 BLUE     = (   0,   0, 255)
 GRAY     = (  50,  50,  50)
 DARK_GRY = (  15,  15,  15)
 LITE_GRY = ( 100, 100, 100)
 
 #GLOBAL CONSTANTS 
-MAX_MOMENTUM = 10 
+MAX_MOMENTUM = 5
 INTRUDER_MOMENTUM = 3 	#sum of momentum plus intruder's jitter 
 			#must be less than KERNEL_SIZE/2
 KERNEL_SIZE = 11 	#must be an odd number 
@@ -77,14 +77,14 @@ if WORLD_TYPE == "bremen":
 else:
     XDIM=500
     YDIM=500
-    OBSTACLES = 10               
+    OBSTACLES = 30               
 
 #DEPRECATED
 #INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints
 
 PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
 #USE_VECTOR_MATRIX_MULTIPLY = False
-DOWNSAMPLE = 3                         #downsample factor for prior updates with complex kernel
+DOWNSAMPLE = 1                         #downsample factor for prior updates with complex kernel
 
 SHOW_SIMPLE_KERNEL = False
 SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
@@ -95,7 +95,8 @@ SHOW_WORLD_TERRAIN = True
 SHOW_POLYGONS = False
 SHOW_COPTER_PATH = True
 
-COLOR_SCALE = XDIM*YDIM*2.5
+#COLOR_SCALE = XDIM*YDIM*2.5
+COLOR_SCALE = XDIM*YDIM*10
 KERNEL_COLOR_SCALE = 1200
 
 #P_HEARD_SOMETHING_IF_NO_INTRUDER = 1e-5
@@ -105,8 +106,7 @@ P_HEARD_SOMETHING_IF_INTRUDER = 1.0                #probability of hearing intr.
 P_SAW_SOMETHING_IF_NO_INTRUDER = 0.0                 #probability of false pos.
 P_SAW_SOMETHING_IF_INTRUDER = 1.0                #probability of seeing intr.
 
-IMAGE_CAPTURE_RATE = 10 #capture an image to disk ever n steps
-			 #(if ==1, no images are saved)
+IMAGE_CAPTURE_RATE = 1 #capture an image to disk ever n steps
 
 
 def show_priors(priors):
@@ -162,10 +162,10 @@ def paint_to_screen(PRIORS, w, c, i, filename = "", isovist_color=WHITE):
                  screen.blit(isovist_surface, isovist_surface.get_rect())
 
         #TREATS
-        for k in w.cookies:
-            img = pygame.image.load("imgs/cookie.png")
-            img = pygame.transform.scale(img, (24,24))
-            screen.blit(img, (k[0]-12, k[1]-12))
+        #for k in w.cookies:
+        #    img = pygame.image.load("imgs/cookie.png")
+        #    img = pygame.transform.scale(img, (24,24))
+        #    screen.blit(img, (k[0]-12, k[1]-12))
 
         #(I haven't implemented popcorn and truffles yet,
         #but if I did, here's some code for displaying
@@ -281,7 +281,7 @@ while done != True:
     #print pm.isovist_color
 
     counter += 1
-    if counter % IMAGE_CAPTURE_RATE == 1:
+    if counter % IMAGE_CAPTURE_RATE == 0:
 	filename = "screen_captures/img"  + str(counter) + ".jpeg"
         paint_to_screen(pm.PRIORS, w, c, i, filename) 
     else:

@@ -69,7 +69,9 @@ class prob_mass:
 
         print('Rolling out policy...')
         self.policy_rollout([i], rollout_epochs, rollout_steps)
-        self.PRIORS = i.geographic_probability_map
+
+	self.initialize_priors()
+        #self.PRIORS = i.geographic_probability_map
         #PRIORS = np.ones([XDIM,YDIM])
 	#PRIORS = PRIORS/np.sum(PRIORS)
 
@@ -79,6 +81,12 @@ class prob_mass:
 	self.isovist_color = (255,255,255) #white
 	print("INITIALIZATION COMPLETE!")
 
+
+    def initialize_priors(self):
+	if self.MODE == 0: #simple kernel
+	    self.PRIORS = np.ones([self.w.xdim, self.w.ydim])
+	else:
+	    self.PRIORS = self.i.geographic_probability_map
   
     def intruder_in_sight_range(self):
 	intersections = self.w.isovist.GetIsovistIntersections((self.c.x, self.c.y),self.c.movement_vector()) 
@@ -180,11 +188,14 @@ class prob_mass:
 
         if self.MODE == 0: #simple kernel - a single kernel summarizes intruder behavior
         
-            new_priors = sess.run(tf_simple_kernel_convolution, feed_dict={tf_priors:np.reshape(new_priors,[1,xlim,ylim,1]),tf_simple_kernel:np.reshape(intruder.simple_movement_kernel(),[self.KERNEL_SIZE,self.KERNEL_SIZE,1,1])})
+            new_priors = sess.run(tf_simple_kernel_convolution, feed_dict={tf_priors:np.reshape(new_priors,[1,xlim,ylim,1]),tf_simple_kernel:np.reshape(self.i.simple_movement_kernel(),[self.KERNEL_SIZE,self.KERNEL_SIZE,1,1])})
         
             #suppress probabilities in regions
             #containing obstacles
-            new_priors = new_priors*self.w.validity_map.T[x_offset:x_offset+xlim,y_offset:y_offset+ylim]
+	    print new_priors.shape
+	    print self.w.validity_map.T.shape
+            #new_priors = new_priors*self.w.validity_map.T[x_offset:x_offset+xlim,y_offset:y_offset+ylim]
+	    print new_priors.shape
 
             return np.reshape(new_priors, [xlim,ylim])
 
@@ -310,11 +321,13 @@ class prob_mass:
                     #p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
                     #p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
 
-                    p_intruder_in_hearing_range = np.mean(self.PRIORS*isovist_mask)
+                    p_intruder_in_hearing_range = np.sum(self.PRIORS*isovist_mask) / np.sum(self.PRIORS)
                     p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
                     p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
 
 		    OBSERVATION = isovist_mask
+		    print "p_intruder_in_hearing_range = %f" % (p_intruder_in_hearing_range)
+		    print "p_heard_something = %f" % (p_heard_something)
 		    print "p_intruder_if_no_sound = %f" % (p_intruder_if_no_sound)
 		    OBSERVATION = OBSERVATION * p_intruder_if_no_sound + (1-isovist_mask) * (1-p_intruder_if_no_sound)
 
@@ -332,8 +345,9 @@ class prob_mass:
         #then assume he could be anywhere
         if np.sum(self.PRIORS) == 0:
             print("PRIORS SUM TO ZERO. Reseting heat map...")
+	    self.initialize_priors()
             #PRIORS = np.ones([XDIM, YDIM])
-            self.PRIORS = self.i.geographic_probability_map
+            #self.PRIORS = self.i.geographic_probability_map
         self.PRIORS = self.PRIORS / np.sum(self.PRIORS) #renormalize
         return self.PRIORS
 
@@ -348,10 +362,10 @@ class prob_mass:
         x1, x2, y1, y2 = w.movement_bounds[0], w.movement_bounds[1]+1, w.movement_bounds[2], w.movement_bounds[3]+1
         self.PRIORS[x1:x2,y1:y2] = self.predict_intruder_location(self.PRIORS[x1:x2,y1:y2], x1, y1)
 
-        #if self.MODE == 0: #simple kernel
-        ##suppress probabilities in regions
-        ##containing obstacles
-        #    self.PRIORS[x1:x2,y1:y2] = self.PRIORS[x1:x2,y1:y2]*self.w.validity_map.T[x1:x2,y1:y2]
+        if self.MODE == 0: #simple kernel
+            ##suppress probabilities in regions
+            ##containing obstacles
+            self.PRIORS[x1:x2,y1:y2] = self.PRIORS[x1:x2,y1:y2]*self.w.validity_map.T[x1:x2,y1:y2]
 
         #renormalize priors after update
         self.PRIORS = self.PRIORS/(np.sum(self.PRIORS)+1e-100)

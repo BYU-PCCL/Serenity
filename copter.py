@@ -40,7 +40,7 @@ class Copter:
         self.hearing_square.fill((255, 255, 255)) #white
 	self.last_x = self.x
 	self.last_y = self.y
-	self.isovist_angle = 90
+	self.isovist_angle = 60
 
     def set_initial_path(self,priors):
 	self.path = self.generate_path(priors, self.x, self.y)
@@ -263,7 +263,7 @@ class Copter:
         boundaries.append(min(self.xdim, self.x+self.hearing_range/2))        #xmax
         boundaries.append(max(0, self.y-self.hearing_range/2))                #ymin
         boundaries.append(min(self.ydim, self.y+self.hearing_range/2))        #ymax
-        return boundaries
+        return map(int, boundaries)
 
     def get_sight_boundaries(self):
         boundaries=[]
