@@ -29,7 +29,7 @@ HEADLESS = False
 #WORLD_TYPE = "bremen"
 WORLD_TYPE = "blocks"
 
-MODE = 0                 #0 = simple kernel, 1 = complex kernel
+MODE = 1                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
 MESSY_WORLD = True
 
@@ -57,7 +57,7 @@ WHITE    = ( 255, 255, 255)
 GREEN    = (   0, 255,   0)
 DRK_GREEN = (   0, 100,   0)
 RED      = ( 255,   0,   0)
-BROWN      = ( 250,   100,  100)
+BROWN      = ( 255,   200,  200)
 BLUE     = (   0,   0, 255)
 GRAY     = (  50,  50,  50)
 DARK_GRY = (  15,  15,  15)
@@ -77,7 +77,7 @@ if WORLD_TYPE == "bremen":
 else:
     XDIM=500
     YDIM=500
-    OBSTACLES = 30               
+    OBSTACLES = 15              
 
 #DEPRECATED
 #INTRUDER_TYPE = 1        #0 = momentum, 1 =waypoints

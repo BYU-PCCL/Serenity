@@ -18,10 +18,10 @@ import intruder
 ##DEPRECATED###
 #KERNEL_SIZE = 11 #must be an odd number
 
-P_HEARD_SOMETHING_IF_NO_INTRUDER = 1e-3
-P_HEARD_SOMETHING_IF_INTRUDER = 0.9
-#P_HEARD_SOMETHING_IF_NO_INTRUDER = 0.0                #probablity of false pos.
-#P_HEARD_SOMETHING_IF_INTRUDER = 1.0                #probability of hearing intr.
+#P_HEARD_SOMETHING_IF_NO_INTRUDER = 1e-5
+#P_HEARD_SOMETHING_IF_INTRUDER = .999
+P_HEARD_SOMETHING_IF_NO_INTRUDER = 0.0                #probablity of false pos.
+P_HEARD_SOMETHING_IF_INTRUDER = 1.0                #probability of hearing intr.
 P_SAW_SOMETHING_IF_NO_INTRUDER = 0.0                 #probability of false pos.
 P_SAW_SOMETHING_IF_INTRUDER = 1.0                #probability of seeing intr.
 

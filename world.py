@@ -11,42 +11,6 @@ import isovist
 SAFETY_MARGIN = 3   #boundary around obstacles
 		    #used in self.is_valid()
 
-#####DEPRECATED#####
-#def sigmoid(x):
-#    return 1.0 / (1.0 + np.exp( -x ) )
-#
-#def crop(array, left_bound, right_bound, lower_bound, upper_bound):
-#    arr = []
-#    for i in range(array.shape[0]):
-#        if array[i][0] > left_bound and array[i][0] < right_bound:
-#            if array[i][1] > lower_bound and array[i][1] < upper_bound:
-#                arr.append(array[i])
-#    return np.array(arr)
-#
-#def shift_and_scale(array, xdim, ydim):
-#    #shifts all xyz coords into a positive frame of reference
-#    #scales xy coords to fall within [xdim, ydim]
-#    x=array.T[0]
-#    y=array.T[1]
-#    z=array.T[2]
-#
-#    x += -1*np.min(x)
-#    y += -1*np.min(y)
-#    z += -1*np.min(z)
-#
-#    x *= xdim/np.max(x)
-#    y *= ydim/np.max(y)
-#    z *= ydim/np.max(z)         #scale between 1-ydim for now
-#
-#def horizontal_slice(array, min_height=200, max_height=1000):
-#    #returns a horizontal slice including all points in the
-#    #desired altitude range
-#    arr = []
-#    for i in range(array.shape[0]):
-#        if array[i][2] > min_height and array[i][2] < max_height:
-#            arr.append(array[i])
-#    return np.array(arr)
-
 
 class World:
 
@@ -96,13 +60,6 @@ class World:
             fixed_contours.append(fixed_contour)
 
         return fixed_contours
-
-#####DEPRECATED######
-#    def create_valid_squares(self):
-#        self.valid_squares = np.zeros([self.xdim,self.ydim])
-#        self.valid_squares[self.movement_bounds[0]:self.movement_bounds[1], self.movement_bounds[2]:self.movement_bounds[3]] = 1 
-#        self.valid_squares += self.terrain
-#        self.valid_squares = 1 - self.valid_squares
 
     def initialize_treats(self, num_treats):
         self.num_treats = num_treats
@@ -167,24 +124,6 @@ class World:
 	#sys.exit()
 	return polygon_segments
 
-#####DEPRECATED####
-#    def create_polygon_map(self):
-#	return [[[(0, 0), (840, 0)], [(840, 0), (840, 360)], [(840, 360), (0, 360)], [(0, 360), (0, 0)]], [[(100, 150), (120, 50)], [(120, 50), (200, 80)], [(200, 80), (140, 210)], [(140, 210), (100, 150)]], [[(100, 200), (120, 250)], [(120, 250), (60, 300)], [(60, 300), (100, 200)]], [[(200, 260), (220, 150)], [(220, 150), (300, 200)], [(300, 200), (350, 320)], [(350, 320), (200, 260)]], [[(540, 60), (560, 40)], [(560, 40), (570, 70)], [(570, 70), (540, 60)]], [[(650, 190), (760, 170)], [(760, 170), (740, 270)], [(740, 270), (630, 290)], [(630, 290), (650, 190)]], [[(600, 95), (780, 50)], [(780, 50), (680, 150)], [(680, 150), (600, 95)]]]
-#
-#	"""polygons = []
-#	polygon_segments = []
-#
-#	for x in open('point_clouds/building_polygons.txt'):
-#	    polygon_points = np.fromstring(x, dtype=float, sep=' ')
-#	    #polygon_points[:,1] = 1000-polygon_points[:,1] #flip on the y axis
-#	    segment_list = []
-#	    for i in range(len(polygon_points)-3):
-#		segment_list.append([(polygon_points[i], polygon_points[i+1]), (polygon_points[i+2],polygon_points[i+3])])
-#	    segment_list.append([(polygon_points[-2], polygon_points[-1]), (polygon_points[0], polygon_points[1])])
-#	    polygon_segments.append(segment_list)
-#	    polygons.append(polygon_points)
-#	return polygons, polygon_segments"""
-
 
     def read_terrain_image(self, filename):
 	
@@ -195,11 +134,14 @@ class World:
         terrain = img[:,:,0] 
         terrain = terrain > 100
         self.terrain = terrain.T[:self.xdim, :self.ydim]
-        self.add_terrain_frame()
+        
+	self.polygon_segments = isovist.getPolygonSegments()
+
+	self.add_terrain_frame()
 
         #use the green color channel for sniper locations
         self.sniper_locations = img[:,:,1].T
-        
+
 
     def within_movement_bounds(self, x, y):
         return (x>self.movement_bounds[0]) and (x<self.movement_bounds[1]) and (y>self.movement_bounds[2]) and (y<self.movement_bounds[3])
