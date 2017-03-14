@@ -17,12 +17,13 @@ class World:
     def __init__(self, xdim, ydim, num_treats, world_type = "bremen", num_obstacles=10, min_obst_dim=10, max_obst_dim=100):
         self.xdim = xdim
         self.ydim = ydim
+	self.polygon_segments = []
 
 	print("Creating world of type '" + world_type + "'")
 	if world_type == "bremen":
             self.movement_bounds = [int(0.3*xdim),int(0.82*xdim),int(0.28*ydim),int(0.8*ydim)]
-            self.read_terrain_image('point_clouds/bremen_altstadt_final.png')
 	    self.polygon_segments = []
+            self.read_terrain_image('point_clouds/bremen_altstadt_final.png')
 	else:
             self.movement_bounds = [0,xdim-1,0,ydim-1]
 	    self.polygon_segments = []
@@ -39,8 +40,8 @@ class World:
         print('  Creating validity map...')
         self.validity_map = self.create_validity_map()
 
-        print('  Storing contours...')
-        self.contours = self.detect_contours()
+        #print('  Storing contours...')
+        #self.contours = self.detect_contours()
 
     def detect_contours(self):
         terrain = self.terrain.astype(np.uint8)
@@ -135,7 +136,7 @@ class World:
         terrain = terrain > 100
         self.terrain = terrain.T[:self.xdim, :self.ydim]
         
-	self.polygon_segments = isovist.getPolygonSegments()
+	#self.polygon_segments = self.isovist.getPolygonSegments()
 
 	self.add_terrain_frame()
 

@@ -26,8 +26,8 @@ import prob_mass
 HEADLESS = False
 #HEADLESS = True
 
-#WORLD_TYPE = "bremen"
-WORLD_TYPE = "blocks"
+WORLD_TYPE = "bremen"
+#WORLD_TYPE = "blocks"
 
 MODE = 1                 #0 = simple kernel, 1 = complex kernel
 TREATS = 3                 #number of cookies/truffles/etc
