@@ -14,14 +14,17 @@ SAFETY_MARGIN = 3   #boundary around obstacles
 
 class World:
 
-    def __init__(self, xdim, ydim, num_treats, world_type = "bremen", num_obstacles=10, min_obst_dim=10, max_obst_dim=100):
+    def __init__(self, xdim, ydim, num_treats, world_type = "bremen", using_viewer = False, num_obstacles=10, min_obst_dim=10, max_obst_dim=100):
         self.xdim = xdim
         self.ydim = ydim
+	self.using_viewer = using_viewer
+
 	self.polygon_segments = []
 
 	print("Creating world of type '" + world_type + "'")
 	if world_type == "bremen":
             self.movement_bounds = [int(0.3*xdim),int(0.82*xdim),int(0.28*ydim),int(0.8*ydim)]
+            #self.movement_bounds = [0,xdim-1,0,ydim-1]
 	    self.polygon_segments = []
             self.read_terrain_image('point_clouds/bremen_altstadt_final.png')
 	else:
@@ -33,8 +36,9 @@ class World:
 	#self.create_valid_squares()
 
         self.initialize_treats(num_treats)
-	#self.polygon_map, self.polygon_segments = self.create_polygon_map()
-        
+	self.polygon_map = self.dw_load_polygons("./paths.txt", self.using_viewer)
+	self.polygon_segments = self.create_segments_from_polygons(self.polygon_map)
+	
         self.isovist = isovist.Isovist(self.polygon_segments)
 
         print('  Creating validity map...')
@@ -43,24 +47,58 @@ class World:
         #print('  Storing contours...')
         #self.contours = self.detect_contours()
 
-    def detect_contours(self):
-        terrain = self.terrain.astype(np.uint8)
-        terrain = cv2.erode(terrain, np.ones((2, 2)), iterations=1)
-        terrain = cv2.dilate(terrain, np.ones((3, 3)), iterations=2)
-        terrain = cv2.cvtColor(cv2.cvtColor(terrain, cv2.COLOR_GRAY2BGR), cv2.COLOR_BGR2GRAY)
-        contours, hierarchy = cv2.findContours(terrain, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    def create_segments_from_polygons(self, polygons):
 
-        contour_image = np.zeros((1000, 1000, 3))
-        cv2.drawContours(contour_image, contours, -1, (255, 255, 0), 1)
-        cv2.imwrite('contours.png', np.rot90(np.flipud(contour_image), k=3))
+	polygon_segments = []
 
-        fixed_contours = []
+	for polygon in polygons:
+	    segments = []
+	    for i in range(len(polygon)-1):
+	        segment = [polygon[i], polygon[i+1]]
+		segments.append(map(tuple,segment))
+	    segment = [polygon[-1], polygon[0]]
+	    segments.append(map(tuple,segment))
+            polygon_segments.append(segments)
 
-        for contour in contours:
-            fixed_contour = np.array([x[0] for x in contour])
-            fixed_contours.append(fixed_contour)
+	return polygon_segments
 
-        return fixed_contours
+        """
+	min_obst_dim = 10
+	max_obst_dim = 100
+        for i in range(10):
+            start_x = rand.randint(0,self.xdim-min_obst_dim)
+            start_y = rand.randint(0,self.ydim-min_obst_dim)
+            end_x = start_x + rand.randint(min_obst_dim, max_obst_dim)
+            if end_x > self.xdim-1:
+                end_x = self.xdim-1
+            end_y = start_y + rand.randint(min_obst_dim, max_obst_dim)
+            if end_y > self.ydim-1:
+                end_y = self.ydim
+            self.terrain[start_x:end_x, start_y:end_y] = 1
+	    point1 = (end_x, start_y)
+	    point2 = (end_x, end_y)
+	    point3 = (start_x, end_y)
+	    point4 = (start_x, start_y)
+	    segments = [[point1, point2], [point2,point3], [point3, point4], [point4,point1]]
+	    polygon_segments.append(segments)
+	#print polygon_segments
+	return polygon_segments
+        """
+
+    def dw_load_polygons( self, fn="./paths.txt", using_viewer = False ):
+        bdata = []
+        for x in open( fn ):
+            tmp = np.fromstring( x, dtype=float, sep=' ' )
+#            tmp = np.reshape( tmp/1000.0, (-1,2) )
+            tmp = np.reshape( tmp, (-1,2) )
+            tmp = np.vstack(( np.mean(tmp, axis=0, keepdims=True), tmp, tmp[0,:] ))
+#            tmp[:,1] = 1.0 - tmp[:,1]  # flip on the y axis
+
+            if using_viewer:
+		pass
+                #tmp[:,1] = 1000.0 - tmp[:,1]  # flip on the y axis
+            bdata.append( tmp )
+        return bdata
 
     def initialize_treats(self, num_treats):
         self.num_treats = num_treats

@@ -20,6 +20,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 import q
+import density_wrapper
 
 RRT_LEN = 100
 RRT_CNT = 100
@@ -91,6 +92,10 @@ def sample_rrt( ):
         tmp = np.vstack( path )
         tmp = np.hstack(( tmp, 0.001*np.ones((tmp.shape[0],1)) )) # add a z coordinate
         foo = np.zeros((100,3))
+
+        if tmp.shape[0] > 100:
+            tmp = tmp[0:100,:]
+
         foo[ 0:tmp.shape[0], : ] = tmp
 
         tmp = paths['position']
@@ -113,8 +118,10 @@ def rrt_thread():
 # ========================================================
 
 print "Loading points..."
-xyz = np.load( MY_DATA_PATH + 'final_xyz.npy' )
-colors_1 = np.load( MY_DATA_PATH + 'final_ref.npy' )
+#xyz = np.load( MY_DATA_PATH + 'final_xyz.npy' )
+#colors_1 = np.load( MY_DATA_PATH + 'final_ref.npy' )
+xyz = np.load( '../point_clouds/final_xyz.npy' )
+colors_1 = np.load( '../point_clouds/final_ref.npy' )
 
 # or do all of this
 # normalize and clip out the interesting bits
@@ -285,6 +292,8 @@ def on_draw(dt):
 cur_width = 800
 cur_height = 800
 
+wrapper = density_wrapper.density_wrapper()
+
 @window.event
 def on_resize(width,height):
     cur_width = width
@@ -296,12 +305,16 @@ def on_resize(width,height):
 
 @window.timer(1/60.)
 def timer(fps):
-    global telapsed
-    quad['u_texture'] += 1
+
+    quad['u_texture'] = wrapper.step()
+
+#    quad['u_texture'] += 1
 #    pnt_cloud['position'][...,2] += 0.01*np.sin( telapsed )
 #    bldgs['position'][...,2] += 0.01*np.sin( telapsed )
 #    telapsed += 0.1
-    sample_rrt()
+#    sample_rrt()
+
+
 
 window.attach( my_transform )
 

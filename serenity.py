@@ -217,7 +217,7 @@ if HEADLESS != True:
     pygame.font.init()
 
 print('Initializing world...')
-w = world.World(XDIM, YDIM, TREATS, WORLD_TYPE, OBSTACLES)
+w = world.World(XDIM, YDIM, TREATS, WORLD_TYPE, False, OBSTACLES)
 
 print('Intruder Type: ' + INTRUDER_TYPE)
 if INTRUDER_TYPE == "RRT_INTRUDER":

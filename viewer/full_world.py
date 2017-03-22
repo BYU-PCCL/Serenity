@@ -71,7 +71,7 @@ class Fullworld( object ):
         else:
             p = 0.0000001
             
-        Q.flip( p=p, name="data" )
+        Q.flip( p=p, name="was_intruder_detected" )
 
         return start_loc,goal_loc,isIntruderFound,rrt_path
 

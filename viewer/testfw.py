@@ -5,24 +5,25 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir) 
 import q
 
-import matplotlib.pyplot as plt
 import full_world
-from my_rrt import *
 
-bdata = load_polygons( "./paths.txt" )
+
 model = full_world.Fullworld()
 
 Q = q.Q( model )
-Q.condition( name="data", value=True )  # condition on the fact that we DID see the intruder
+Q.condition( name="was_intruder_detected", value=True )  # condition on the fact that we DID see the intruder
 Q.analyze()
 
-#results, scores = Q.opt_adam( itercnt=1000, rolloutcnt=10 )
-#results, scores = Q.opt_sgd( alpha=0.001, itercnt=1000, rolloutcnt=10 )
-
-#results, scores = Q.opt_adam( alpha=0.001, itercnt=300, rolloutcnt=10 )
-#results, scores = Q.opt_adam( alpha=0.001, itercnt=300, rolloutcnt=3 )
 results, scores = Q.opt_adam( alpha=0.0025, itercnt=100, rolloutcnt=10 )
 
+
+
+
+
+
+import matplotlib.pyplot as plt
+from my_rrt import *
+bdata = load_polygons( "./paths.txt" )
 '''
 start_loc,goal_loc,isfnd,rrt_path,ints = Q.run_model()
 

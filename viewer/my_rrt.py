@@ -1,7 +1,7 @@
 import numpy as np
 import time
 
-STEP_SIZE = .01
+STEP_SIZE = .05
 
 # python -m cProfile -s tottime my_rrt.py
 
@@ -94,6 +94,7 @@ def run_rrt( start_pt, goal_pt, endpoint_a_x, endpoint_a_y, endpoint_b_x, endpoi
 
     for i in range( 0, step_limit ):
         random_point = np.random.rand(1,2) * scale
+#        random_point = Q.rand( sz=(1,2), name="rrt_q_%d"%i ) * scale
 
         # find nearest node
         distances = distance_to_other_points( random_point, nodes )
