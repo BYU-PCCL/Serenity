@@ -18,12 +18,12 @@ import intruder
 ##DEPRECATED###
 #KERNEL_SIZE = 11 #must be an odd number
 
-#P_HEARD_SOMETHING_IF_NO_INTRUDER = 1e-5
-#P_HEARD_SOMETHING_IF_INTRUDER = .999
-P_HEARD_SOMETHING_IF_NO_INTRUDER = 0.0                #probablity of false pos.
-P_HEARD_SOMETHING_IF_INTRUDER = 1.0                #probability of hearing intr.
-P_SAW_SOMETHING_IF_NO_INTRUDER = 0.0                 #probability of false pos.
-P_SAW_SOMETHING_IF_INTRUDER = 1.0                #probability of seeing intr.
+#P_HEARD_SOMETHING_IF_NO_INTRUDER = 0.0             #probablity of false pos.
+#P_HEARD_SOMETHING_IF_INTRUDER = 1.0               #probability of hearing intr.
+#P_SAW_SOMETHING_IF_NO_INTRUDER = 1e-5
+#P_SAW_SOMETHING_IF_INTRUDER = .99999
+P_SAW_SOMETHING_IF_NO_INTRUDER = 0.0001             #probability of false pos.
+P_SAW_SOMETHING_IF_INTRUDER = .99               #probability of seeing intr.
 
 
 
@@ -341,13 +341,17 @@ class prob_mass:
                 
                     p_intruder_in_sight_range = np.sum(self.PRIORS*isovist_mask) / np.sum(self.PRIORS)
                     p_saw_something = p_intruder_in_sight_range * P_SAW_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_sight_range) * P_SAW_SOMETHING_IF_NO_INTRUDER
-                    p_intruder_if_no_sighting = (1.-P_SAW_SOMETHING_IF_INTRUDER)*p_intruder_in_sight_range/(1. - (p_saw_something) + 1e-100)
+		    
+		    #p(I|~D) = p(~D|I)*p(I)/P(~D)
+                    
+		    #OLD
+		    #p_intruder_if_no_sighting = (1.-P_SAW_SOMETHING_IF_INTRUDER)*p_intruder_in_sight_range/(1. - p_saw_something + 1e-100)
+		    #OBSERVATION = isovist_mask
+		    #OBSERVATION = OBSERVATION * p_intruder_if_no_sighting + (1-isovist_mask) * (1-p_intruder_if_no_sighting)
 
-		    OBSERVATION = isovist_mask
-		    print "p_intruder_in_hearing_range = %f" % (p_intruder_in_sight_range)
-		    print "p_heard_something = %f" % (p_saw_something)
-		    print "p_intruder_if_no_sound = %f" % (p_intruder_if_no_sighting)
-		    OBSERVATION = OBSERVATION * p_intruder_if_no_sighting + (1-isovist_mask) * (1-p_intruder_if_no_sighting)
+		    #NEW
+		    OBSERVATION = (1.-P_SAW_SOMETHING_IF_INTRUDER)*isovist_mask/(1. - p_saw_something + 1e-100)
+		    OBSERVATION = OBSERVATION + (1-isovist_mask)
 
 		else:
 		    #We made no observation, so priors will stay unchanged
