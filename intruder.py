@@ -173,7 +173,7 @@ class Intruder:
             if self.waypoint[1] < self.y:
                 new_y = self.y - (self.momentum_y+jitter) 
 
-            if self.my_world.is_valid(new_x, new_y):
+            if new_x < self.my_world.xdim and new_y < self.my_world.ydim and self.my_world.is_valid(new_x, new_y):
                 self.x = new_x
                 self.y = new_y
             else:

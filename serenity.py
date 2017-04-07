@@ -84,7 +84,7 @@ else:
 
 PAUSE_BETWEEN_TIME_STEPS = 0         #-1 prompts for input between steps
 #USE_VECTOR_MATRIX_MULTIPLY = False
-DOWNSAMPLE = 1                         #downsample factor for prior updates with complex kernel
+DOWNSAMPLE = 3                         #downsample factor for prior updates with complex kernel
 
 SHOW_SIMPLE_KERNEL = False
 SHOW_COMPLEX_KERNEL = False        #shows kernel at intruder's curreny xy coords
@@ -93,6 +93,7 @@ SHOW_INITIAL_PROBABILITY_MAP = False
 SHOW_ISOVIST = True
 SHOW_WORLD_TERRAIN = True
 SHOW_POLYGONS = False
+SHOW_VALIDITY_MAP = False
 SHOW_COPTER_PATH = True
 
 #COLOR_SCALE = XDIM*YDIM*2.5
@@ -136,8 +137,16 @@ def paint_to_screen(PRIORS, w, c, i, filename = "", isovist_color=WHITE):
         
 	#POLYGON_MAP
 	if SHOW_POLYGONS == True:
-	    for p in w.polygon_map:
-	        pygame.draw.polygon(screen, BROWN, p)
+	    try:
+	        for p in w.polygon_map:
+	            pygame.draw.polygon(screen, BROWN, p)
+	    except:
+		print "Serenity.py: Unable to draw polygon map."
+
+	if SHOW_VALIDITY_MAP == True:	
+	    img = pygame.surfarray.make_surface((w.validity_map*1000).astype(int))
+            img.set_alpha(70)
+            screen.blit(img, img.get_rect())
 
 	#COPTER PATH
 	if SHOW_COPTER_PATH == True:
@@ -162,10 +171,10 @@ def paint_to_screen(PRIORS, w, c, i, filename = "", isovist_color=WHITE):
                  screen.blit(isovist_surface, isovist_surface.get_rect())
 
         #TREATS
-        #for k in w.cookies:
-        #    img = pygame.image.load("imgs/cookie.png")
-        #    img = pygame.transform.scale(img, (24,24))
-        #    screen.blit(img, (k[0]-12, k[1]-12))
+        for k in w.cookies:
+            img = pygame.image.load("imgs/cookie.png")
+            img = pygame.transform.scale(img, (24,24))
+            screen.blit(img, (k[0]-12, k[1]-12))
 
         #(I haven't implemented popcorn and truffles yet,
         #but if I did, here's some code for displaying

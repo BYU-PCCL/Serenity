@@ -7,6 +7,7 @@ import cv2
 from scipy.misc import imread
 
 import isovist
+from PIL import Image, ImageDraw, ImageOps
 
 SAFETY_MARGIN = 3   #boundary around obstacles
 		    #used in self.is_valid()
@@ -22,30 +23,37 @@ class World:
 	self.polygon_segments = []
 
 	print("Creating world of type '" + world_type + "'")
-	if world_type == "bremen":
-            self.movement_bounds = [int(0.3*xdim),int(0.82*xdim),int(0.28*ydim),int(0.8*ydim)]
-            #self.movement_bounds = [0,xdim-1,0,ydim-1]
+	self.world_type = world_type
+	if self.world_type == "bremen":
+            #self.movement_bounds = [int(0.3*xdim),int(0.82*xdim),int(0.28*ydim),int(0.8*ydim)]
+            self.movement_bounds = [0,xdim-1,0,ydim-1]
 	    self.polygon_segments = []
             self.read_terrain_image('point_clouds/bremen_altstadt_final.png')
+	    self.polygon_map = self.dw_load_polygons("./paths.txt", self.using_viewer)
+	    self.polygon_map.append(np.array([(0,0), (0,10), (10, 1000), (0,1000)]))
+	    self.polygon_map.append(np.array([(0,0), (10,0), (1000, 10), (1000,0)]))
+	    self.polygon_map.append(np.array([(990,0), (990,1000), (1000, 1000), (1000,0)]))
+	    self.polygon_map.append(np.array([(0,990), (1000,990), (1000, 1000), (0,1000)]))
+	    self.polygon_segments = self.create_segments_from_polygons(self.polygon_map)
 	else:
             self.movement_bounds = [0,xdim-1,0,ydim-1]
 	    self.polygon_segments = []
             self.polygon_segments += self.initialize_terrain(num_obstacles, min_obst_dim, max_obst_dim)
-       
-        ###DEPRECATED###
-	#self.create_valid_squares()
-
-        self.initialize_treats(num_treats)
-	self.polygon_map = self.dw_load_polygons("./paths.txt", self.using_viewer)
-	self.polygon_segments = self.create_segments_from_polygons(self.polygon_map)
 	
         self.isovist = isovist.Isovist(self.polygon_segments)
 
         print('  Creating validity map...')
-        self.validity_map = self.create_validity_map()
+	if self.world_type == "bremen":
+	    self.validity_map = self.validity_map_from_polygons()
+            #self.validity_map = self.create_validity_map()
 
-        #print('  Storing contours...')
-        #self.contours = self.detect_contours()
+	    #self.validity_map[100:300,100:300] = 0
+	else:
+            self.validity_map = self.create_validity_map()
+
+	
+	#This must be done AFTER the validity map is established...
+        self.initialize_treats(num_treats)
 
     def create_segments_from_polygons(self, polygons):
 
@@ -186,6 +194,20 @@ class World:
         return (x>self.movement_bounds[0]) and (x<self.movement_bounds[1]) and (y>self.movement_bounds[2]) and (y<self.movement_bounds[3])
 
 
+    def validity_map_from_polygons(self):
+	img = Image.new('L', (self.xdim, self.ydim), 1)
+	#ImageDraw.Draw(img).polygon([(500,500),(500,600),(550,550),(600,600),(600,500)], outline=0, fill=0)
+	#ImageDraw.Draw(img).polygon([(477,568), (405, 665), (516, 648)], outline=0, fill=0)
+	for polygon in self.polygon_map:
+	    #print polygon.astype(int)[:3]
+	    #print map(tuple, polygon.astype(int)[:3])
+	    #raw_input("pause")
+	    ImageDraw.Draw(img).polygon(map(tuple,polygon.astype(int)), outline=0, fill=0)
+
+	#print np.array(img)[1][1]
+	#raw_input(np.sum(np.array(img)))
+	return np.array(img)
+
     def create_validity_map(self):
         validity_map = np.zeros((self.terrain.shape[0] + 1, self.terrain.shape[1] + 1))
 
@@ -196,12 +218,16 @@ class World:
         return validity_map
 
     def is_valid(self, x, y):
-        #a square is valid IFF if it is not too near the edge
-	#of an obstacle or the edge of the screen.
         
-        #original version; we're trying to be faster
         try:
             return self.validity_map[y, x]
         except AttributeError:
-            return self.within_movement_bounds(x,y) and not np.any(self.terrain[x-SAFETY_MARGIN:x+SAFETY_MARGIN,y-SAFETY_MARGIN:y+SAFETY_MARGIN])
+	    if self.world_type == 'blocks':
+        	#a square is valid IFF if it is not too near the edge
+		#of an obstacle or the edge of the screen.
+                return self.within_movement_bounds(x,y) and not np.any(self.terrain[x-SAFETY_MARGIN:x+SAFETY_MARGIN,y-SAFETY_MARGIN:y+SAFETY_MARGIN])
+	    elif self.world_type == 'bremen':
+		return self.within_movement_bounds(x,y)
+	    else:
+	        print "ERROR: Unknown world type: " + self.world_type
         

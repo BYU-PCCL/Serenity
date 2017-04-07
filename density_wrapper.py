@@ -12,14 +12,14 @@ from PIL import Image, ImageDraw, ImageOps
 
 MESSY_WORLD = True
 INTRUDER_MOMENTUM=4
-DOWNSAMPLE_FACTOR=2
-COLOR_SCALE = 1000 * 1000 * 2.5
+#COLOR_SCALE = 1000 * 1000 * 2.5
+COLOR_SCALE = 1000 * 1000 * 30
 
 MODE = 0 #0 for simple kernel, 1 for complex kernel
 kernel_size = 11
 rollout_epochs = 1000
 rollout_steps = 1000
-downsample = 2
+downsample = 4
 
 
 #rotation code from http://stackoverflow.com/questions/34372480/rotate-point-about-another-point-in-degrees-python

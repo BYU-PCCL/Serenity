@@ -84,7 +84,8 @@ class prob_mass:
 
     def initialize_priors(self):
 	if self.MODE == 0: #simple kernel
-	    self.PRIORS = np.ones([self.w.xdim, self.w.ydim])
+	    #self.PRIORS = np.ones([self.w.xdim, self.w.ydim])
+	    self.PRIORS = self.w.validity_map[:self.w.xdim,:self.w.ydim]
 	else:
 	    self.PRIORS = self.i.geographic_probability_map
   
@@ -94,9 +95,9 @@ class prob_mass:
 
     def saw_something(self):
         if self.intruder_in_sight_range():            
-            return rand.random() < P_HEARD_SOMETHING_IF_INTRUDER
+            return rand.random() < P_SAW_SOMETHING_IF_INTRUDER
         else:
-            return rand.random() < P_HEARD_SOMETHING_IF_NO_INTRUDER
+            return rand.random() < P_SAW_SOMETHING_IF_NO_INTRUDER
 
 
     def intruder_in_hearing_range(self):
@@ -238,16 +239,38 @@ class prob_mass:
             return new_priors/(np.sum(new_priors)+1e-100)
 
     def update_priors(self):
-        #If we spotted the intruder, update OBSERVATION with his location
-        #(We assume determinism: if he's in our range of vision, we spotted him.)
+        #If we think we spotted the intruder, update OBSERVATION with his location
+	flag_saw_something = False
         if self.saw_something():
-            #determine the location at which the "sound" was heard
+	    flag_saw_something = True
+            #determine the location at which the "intruder" was seen
 	    self.isovist_color = (255,255,255) #white
             if self.intruder_in_sight_range():
-                #we really did hear the intruder
+                #we really did see the intruder
                 targ_x = self.i.x
                 targ_y = self.i.y
                 print("INTRUDER SIGHTED at" + str([targ_x,targ_y]) + "!")
+            else:
+                #this was a false positive,
+                #so we randomly assign it to 
+                #a position in sight_range
+	        #!intersections = self.w.isovist.GetIsovistIntersections((self.c.x, self.c.y),self.c.movement_vector()) 
+		#!print intersections
+		#!raw_input("test")
+                boundary = self.c.get_hearing_boundaries()
+                targ_x = rand.randint(boundary[0], boundary[1])
+                targ_y = rand.randint(boundary[2], boundary[3])
+                print("SOMETHING SEEN at" + str([targ_x,targ_y]) + "!")
+ 
+       
+	"""
+	if self.heard_something():
+            #determine the location at which the "sound" was heard
+            if self.intruder_in_hearing_range():
+                #we really did hear the intruder
+                targ_x = self.i.x
+                targ_y = self.i.y
+                print("INTRUDER HEARD at" + str([targ_x,targ_y]) + "!")
             else:
                 #this was a false noise,
                 #so we randomly assign it to 
@@ -255,15 +278,17 @@ class prob_mass:
                 boundary = self.c.get_hearing_boundaries()
                 targ_x = rand.randint(boundary[0], boundary[1])
                 targ_y = rand.randint(boundary[2], boundary[3])
-                print("SOMETHING SEEN at" + str([targ_x,targ_y]) + "!")
-	
-            #derive: Probability that intruder is here given that I heard a sound
-            #p(Intruder | heard something) = p(heard something | intruder)*p(intruder)/p(heard something)
-            p_heard_something = self.PRIORS[targ_x][targ_y] * P_HEARD_SOMETHING_IF_INTRUDER + (1.-self.PRIORS[targ_x][targ_y]) * P_HEARD_SOMETHING_IF_NO_INTRUDER
-            p_intruder_if_heard_something = P_HEARD_SOMETHING_IF_INTRUDER * self.PRIORS[targ_x][targ_y] / (p_heard_something + 1e-100)
+                print("SOMETHING HEARD at" + str([targ_x,targ_y]) + "!")
+	"""
 
-            self.PRIORS = self.PRIORS * (1.-p_intruder_if_heard_something)
-            self.PRIORS[targ_x][targ_y] = p_intruder_if_heard_something
+	if flag_saw_something:
+            #derive: Probability that intruder is here given that I saw_something
+            #p(Intruder | saw something) = p(saw something | intruder)*p(intruder)/p(saw something)
+            p_saw_something = self.PRIORS[targ_x][targ_y] * P_SAW_SOMETHING_IF_INTRUDER + (1.-self.PRIORS[targ_x][targ_y]) * P_SAW_SOMETHING_IF_NO_INTRUDER
+            p_intruder_if_saw_something = P_SAW_SOMETHING_IF_INTRUDER * self.PRIORS[targ_x][targ_y] / (p_saw_something + 1e-100)
+
+            self.PRIORS = self.PRIORS * (1.-p_intruder_if_saw_something)
+            self.PRIORS[targ_x][targ_y] = p_intruder_if_saw_something
         
             #WE HEARD SOMETHING
             #so assume that our current waypoint may no longer be accurate
@@ -283,17 +308,15 @@ class prob_mass:
 	    self.last_intruder_x = targ_x
 	    self.last_intruder_y = targ_y
 
-        else: #we didn't hear anything
-	    self.isovist_color = (0,0,150) #medium green
-  
+        else:
 	    #we didn't see the intruder, so reset
 	    #the last sighting flags
 	    self.last_intruder_x = -1
 	    self.last_intruder_y = -1
 
 
-            #derive: Probability that intruder is here given that I heard NO sound
-            #p(Intruder | no sound) = p(didn't hear anything | intruder) * p(Intruder) / p(heard something)
+            #derive: Probability that intruder is here given that I saw NO intruder 
+            #p(Intruder | no obs) = p(didn't see anything | intruder) * p(Intruder) / p(saw something)
 	    if False:
 		#THIS IS THE OLD WAY,
 		#based on a square of "hearing" rather than an isovist
@@ -316,20 +339,15 @@ class prob_mass:
 		    ImageDraw.Draw(img).polygon(polygon, outline=1, fill=1)
 		    isovist_mask = np.array(img).T
                 
-		    #boundaries = self.c.get_hearing_boundaries()
-                    #p_intruder_in_hearing_range = np.mean(self.PRIORS[int(boundaries[0]):int(boundaries[1]), int(boundaries[2]):int(boundaries[3])])
-                    #p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
-                    #p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
-
-                    p_intruder_in_hearing_range = np.sum(self.PRIORS*isovist_mask) / np.sum(self.PRIORS)
-                    p_heard_something = p_intruder_in_hearing_range * P_HEARD_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_hearing_range) * P_HEARD_SOMETHING_IF_NO_INTRUDER
-                    p_intruder_if_no_sound = (1.-P_HEARD_SOMETHING_IF_INTRUDER)*p_intruder_in_hearing_range/(1. - (p_heard_something) + 1e-100)
+                    p_intruder_in_sight_range = np.sum(self.PRIORS*isovist_mask) / np.sum(self.PRIORS)
+                    p_saw_something = p_intruder_in_sight_range * P_SAW_SOMETHING_IF_INTRUDER + (1.-p_intruder_in_sight_range) * P_SAW_SOMETHING_IF_NO_INTRUDER
+                    p_intruder_if_no_sighting = (1.-P_SAW_SOMETHING_IF_INTRUDER)*p_intruder_in_sight_range/(1. - (p_saw_something) + 1e-100)
 
 		    OBSERVATION = isovist_mask
-		    print "p_intruder_in_hearing_range = %f" % (p_intruder_in_hearing_range)
-		    print "p_heard_something = %f" % (p_heard_something)
-		    print "p_intruder_if_no_sound = %f" % (p_intruder_if_no_sound)
-		    OBSERVATION = OBSERVATION * p_intruder_if_no_sound + (1-isovist_mask) * (1-p_intruder_if_no_sound)
+		    print "p_intruder_in_hearing_range = %f" % (p_intruder_in_sight_range)
+		    print "p_heard_something = %f" % (p_saw_something)
+		    print "p_intruder_if_no_sound = %f" % (p_intruder_if_no_sighting)
+		    OBSERVATION = OBSERVATION * p_intruder_if_no_sighting + (1-isovist_mask) * (1-p_intruder_if_no_sighting)
 
 		else:
 		    #We made no observation, so priors will stay unchanged
